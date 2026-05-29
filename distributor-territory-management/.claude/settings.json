@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npm run *)",
+      "Bash(curl -sf -o /dev/null http://localhost:3000/login)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"Killed $_\" } catch { \"skip $_\" } }; Remove-Item -Path \".next-dev.log\" -ErrorAction SilentlyContinue; \"done\")",
+      "Bash(curl -sf -o /dev/null http://localhost:3000/territories)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/territories)",
+      "PowerShell(@\\(18940, 3000, 3001\\) | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop } catch {} }; Get-NetTCPConnection -LocalPort 3000,3001 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"Killed $_\" } catch { \"skip $_\" } }; \"done\")"
+    ]
+  }
+}

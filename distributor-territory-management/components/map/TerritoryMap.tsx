@@ -1,0 +1,300 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  MapContainer,
+  Marker,
+  Polygon,
+  Polyline,
+  Popup,
+  TileLayer,
+  Tooltip,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import { DrawControl } from "./DrawControl";
+import { HeatLayer } from "./HeatLayer";
+import { TerritoryPopupCard } from "./TerritoryPopupCard";
+import { DEMO_CITY } from "@/mock/distributors";
+import { useTerritoryStore } from "@/store/territoryStore";
+import { useDistributorStore } from "@/store/distributorStore";
+import { centroid, findOverlappingPairs } from "@/lib/geo";
+import type { BaseLayerId, LatLng, MapFilters, SalesPoint, Territory } from "@/types";
+
+function buildLabelIcon(name: string, color: string) {
+  const safeName = name.replace(/[<>]/g, "");
+  const html = `<span style="background:${color}cc;color:#fff;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-shadow:0 1px 2px rgba(0,0,0,0.6);white-space:nowrap;">${safeName}</span>`;
+  return L.divIcon({
+    className: "territory-label",
+    html,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
+
+interface Props {
+  drawing?: boolean;
+  showHeatmap?: boolean;
+  heatPoints?: SalesPoint[];
+  onDraftCreated?: (coords: LatLng[]) => void;
+  onTerritoryClick?: (id: string) => void;
+  focusTerritoryId?: string | null;
+  height?: string;
+  filters?: MapFilters;
+  baseLayer?: BaseLayerId;
+  showLabels?: boolean;
+  highlightOverlaps?: boolean;
+}
+
+const BASE_LAYERS: Record<
+  BaseLayerId,
+  { url: string; attribution: string; dark: boolean }
+> = {
+  dark: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    dark: true,
+  },
+  streets: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    dark: false,
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution:
+      "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP",
+    dark: false,
+  },
+};
+
+function FocusController({
+  territory,
+  focusTick,
+}: {
+  territory?: Territory | null;
+  focusTick: number;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!territory) return;
+    const bounds = L.latLngBounds(territory.coordinates.map(([lat, lng]) => L.latLng(lat, lng)));
+    if (bounds.isValid()) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.6 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [territory?.id, focusTick, map]);
+  return null;
+}
+
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const onResize = () => map.invalidateSize(false);
+    window.addEventListener("resize", onResize);
+    const initial = setTimeout(onResize, 80);
+
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      // requestAnimationFrame keeps the call in sync with the layout commit.
+      window.requestAnimationFrame(() => map.invalidateSize(false));
+    });
+    observer.observe(container);
+    if (container.parentElement) observer.observe(container.parentElement);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(initial);
+      observer.disconnect();
+    };
+  }, [map]);
+  return null;
+}
+
+export function TerritoryMap({
+  drawing = false,
+  showHeatmap = false,
+  heatPoints = [],
+  onDraftCreated,
+  onTerritoryClick,
+  focusTerritoryId,
+  height = "100%",
+  filters,
+  baseLayer = "dark",
+  showLabels = true,
+  highlightOverlaps = false,
+}: Props) {
+  const territories = useTerritoryStore((s) => s.territories);
+  const draft = useTerritoryStore((s) => s.draft);
+  const selectedId = useTerritoryStore((s) => s.selectedId);
+  const focusTick = useTerritoryStore((s) => s.focusTick);
+  const setSelected = useTerritoryStore((s) => s.setSelected);
+  const distributors = useDistributorStore((s) => s.distributors);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const distributorMap = useMemo(
+    () => Object.fromEntries(distributors.map((d) => [d.id, d])),
+    [distributors],
+  );
+
+  const filteredTerritories = useMemo(() => {
+    if (!filters) return territories;
+    const q = filters.query.trim().toLowerCase();
+    return territories.filter((t) => {
+      if (filters.performances.length && !filters.performances.includes(t.performance)) return false;
+      if (filters.assignmentMode === "assigned" && !t.distributorId) return false;
+      if (filters.assignmentMode === "unassigned" && t.distributorId) return false;
+      if (q) {
+        const d = t.distributorId ? distributorMap[t.distributorId] : undefined;
+        const hay = `${t.name} ${t.coverageArea} ${d?.name ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [territories, filters, distributorMap]);
+
+  const visibleIds = useMemo(
+    () => new Set(filteredTerritories.map((t) => t.id)),
+    [filteredTerritories],
+  );
+
+  const overlapPairs = useMemo(
+    () => (highlightOverlaps ? findOverlappingPairs(filteredTerritories) : []),
+    [highlightOverlaps, filteredTerritories],
+  );
+
+  const overlapIds = useMemo(() => {
+    const set = new Set<string>();
+    overlapPairs.forEach((p) => {
+      set.add(p.a.id);
+      set.add(p.b.id);
+    });
+    return set;
+  }, [overlapPairs]);
+
+  const focusTerritory =
+    territories.find((t) => t.id === focusTerritoryId) ||
+    territories.find((t) => t.id === selectedId);
+
+  const layer = BASE_LAYERS[baseLayer];
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative h-full w-full overflow-hidden rounded-xl"
+      style={{ height }}
+      data-base-layer={baseLayer}
+    >
+      <MapContainer
+        center={DEMO_CITY.center}
+        zoom={DEMO_CITY.zoom}
+        zoomControl
+        scrollWheelZoom
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer key={baseLayer} attribution={layer.attribution} url={layer.url} />
+
+        {showHeatmap && <HeatLayer points={heatPoints} />}
+
+        {filteredTerritories.map((t) => {
+          const distributor = t.distributorId ? distributorMap[t.distributorId] : undefined;
+          const isHover = hoverId === t.id;
+          const isSelected = selectedId === t.id;
+          const hasOverlap = overlapIds.has(t.id);
+          const dimmed =
+            !!filters &&
+            visibleIds.size > 0 &&
+            visibleIds.size < territories.length &&
+            !visibleIds.has(t.id);
+          if (dimmed) return null;
+          return (
+            <Polygon
+              key={t.id}
+              positions={t.coordinates}
+              pathOptions={{
+                color: hasOverlap ? "#f97316" : t.color,
+                weight: isSelected ? 3.5 : hasOverlap ? 3 : 2,
+                fillColor: t.color,
+                fillOpacity: isHover ? 0.5 : isSelected ? 0.4 : 0.22,
+                dashArray: hasOverlap ? "6 4" : undefined,
+              }}
+              eventHandlers={{
+                mouseover: () => setHoverId(t.id),
+                mouseout: () => setHoverId(null),
+                click: () => {
+                  setSelected(t.id);
+                  onTerritoryClick?.(t.id);
+                },
+              }}
+            >
+              <Tooltip direction="top" sticky offset={[0, -8]}>
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold">{t.name}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {distributor?.name ?? "Unassigned"}
+                  </div>
+                  {hasOverlap && (
+                    <div className="text-[10px] text-amber-300">⚠ Overlaps another territory</div>
+                  )}
+                </div>
+              </Tooltip>
+              <Popup>
+                <TerritoryPopupCard territory={t} distributor={distributor} />
+              </Popup>
+            </Polygon>
+          );
+        })}
+
+        {showLabels &&
+          filteredTerritories.map((t) => {
+            if (
+              filters &&
+              visibleIds.size > 0 &&
+              visibleIds.size < territories.length &&
+              !visibleIds.has(t.id)
+            ) {
+              return null;
+            }
+            const center = centroid(t.coordinates);
+            return (
+              <Marker
+                key={`label-${t.id}`}
+                position={center}
+                interactive={false}
+                keyboard={false}
+                icon={buildLabelIcon(t.name, t.color)}
+              />
+            );
+          })}
+
+        {draft && draft.coordinates.length >= 3 && (
+          <Polygon
+            positions={draft.coordinates}
+            pathOptions={{
+              color: draft.color,
+              weight: 3,
+              dashArray: "8 6",
+              fillColor: draft.color,
+              fillOpacity: 0.2,
+            }}
+          />
+        )}
+
+        {draft && draft.coordinates.length === 2 && (
+          <Polyline
+            positions={draft.coordinates}
+            pathOptions={{ color: draft.color, weight: 3, dashArray: "6 6" }}
+          />
+        )}
+
+        {drawing && onDraftCreated && (
+          <DrawControl enabled={drawing} onShapeCreated={onDraftCreated} />
+        )}
+
+        <FocusController territory={focusTerritory} focusTick={focusTick} />
+        <MapResizer />
+      </MapContainer>
+    </div>
+  );
+}
+
+export default TerritoryMap;
