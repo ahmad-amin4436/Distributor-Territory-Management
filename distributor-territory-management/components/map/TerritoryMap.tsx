@@ -88,21 +88,40 @@ function FocusController({
 function MapResizer() {
   const map = useMap();
   useEffect(() => {
-    const onResize = () => map.invalidateSize(false);
-    window.addEventListener("resize", onResize);
-    const initial = setTimeout(onResize, 80);
+    let disposed = false;
+    let rafId = 0;
+
+    const safeInvalidate = () => {
+      if (disposed) return;
+      // Leaflet may have cleared internal state during unmount/teardown.
+      const container = map.getContainer?.();
+      if (!container || !container.isConnected) return;
+      try {
+        map.invalidateSize(false);
+      } catch {
+        // Swallow: Leaflet sometimes races teardown of internal panes.
+      }
+    };
+
+    const schedule = () => {
+      if (disposed) return;
+      cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(safeInvalidate);
+    };
+
+    window.addEventListener("resize", schedule);
+    const initial = window.setTimeout(safeInvalidate, 80);
 
     const container = map.getContainer();
-    const observer = new ResizeObserver(() => {
-      // requestAnimationFrame keeps the call in sync with the layout commit.
-      window.requestAnimationFrame(() => map.invalidateSize(false));
-    });
+    const observer = new ResizeObserver(schedule);
     observer.observe(container);
     if (container.parentElement) observer.observe(container.parentElement);
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      clearTimeout(initial);
+      disposed = true;
+      window.removeEventListener("resize", schedule);
+      window.clearTimeout(initial);
+      cancelAnimationFrame(rafId);
       observer.disconnect();
     };
   }, [map]);

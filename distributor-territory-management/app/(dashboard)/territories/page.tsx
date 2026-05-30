@@ -154,7 +154,7 @@ export default function TerritoriesPage() {
       if (!items.length) {
         setToast({ tone: "danger", text: "No valid polygon features found in that GeoJSON." });
       } else {
-        const added = addImportedTerritories(items);
+        const added = await addImportedTerritories(items);
         setToast({ tone: "success", text: `Imported ${added} territor${added === 1 ? "y" : "ies"}.` });
       }
     } catch (err) {

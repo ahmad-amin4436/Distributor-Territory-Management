@@ -28,7 +28,6 @@ export function TerritorySidebar({ onEdit, filters }: Props) {
   const setSelected = useTerritoryStore((s) => s.setSelected);
   const removeTerritory = useTerritoryStore((s) => s.removeTerritory);
   const distributors = useDistributorStore((s) => s.distributors);
-  const assignTerritory = useDistributorStore((s) => s.assignTerritory);
 
   const filtered = useMemo(() => {
     if (!filters) return territories;
@@ -126,7 +125,7 @@ export function TerritorySidebar({ onEdit, filters }: Props) {
                 className="h-7 px-2 text-xs text-rose-400 hover:text-rose-300"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (t.distributorId) assignTerritory(t.distributorId, undefined);
+                  // Deleting clears the distributor link server-side and in-store.
                   removeTerritory(t.id);
                 }}
               >

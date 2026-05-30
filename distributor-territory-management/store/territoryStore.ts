@@ -1,10 +1,10 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { LatLng, PerformanceStatus, Territory } from "@/types";
-import { mockTerritories, TERRITORY_COLORS } from "@/mock/territories";
+import type { LatLng, Territory } from "@/types";
 import type { ImportedTerritory } from "@/lib/geo";
+import { territoryApi, type TerritoryInput } from "@/lib/api";
+import { useDistributorStore } from "@/store/distributorStore";
 
 interface DraftTerritory {
   coordinates: LatLng[];
@@ -17,150 +17,143 @@ interface TerritoryState {
   selectedId: string | null;
   focusTick: number;
   initialized: boolean;
-  init: () => void;
+  loading: boolean;
+  error: string | null;
+  load: () => Promise<void>;
   setDraft: (draft: DraftTerritory | null) => void;
-  addTerritory: (input: Omit<Territory, "id" | "createdAt" | "monthlySales" | "targetSales" | "performance" | "outlets" | "color"> & { color?: string }) => Territory;
-  addImportedTerritories: (items: ImportedTerritory[]) => number;
-  updateTerritory: (id: string, patch: Partial<Territory>) => void;
-  updateCoordinates: (id: string, coordinates: LatLng[]) => void;
-  removeTerritory: (id: string) => void;
+  addTerritory: (
+    input: Omit<Territory, "id" | "createdAt" | "monthlySales" | "targetSales" | "performance" | "outlets" | "color"> & { color?: string },
+  ) => Promise<Territory>;
+  addImportedTerritories: (items: ImportedTerritory[]) => Promise<number>;
+  updateTerritory: (id: string, patch: Partial<Territory>) => Promise<void>;
+  updateCoordinates: (id: string, coordinates: LatLng[]) => Promise<void>;
+  removeTerritory: (id: string) => Promise<void>;
   setSelected: (id: string | null) => void;
-  assignDistributor: (territoryId: string, distributorId: string | undefined) => void;
+  assignDistributor: (territoryId: string, distributorId: string | undefined) => Promise<void>;
+  /** Replace a single territory in local state (used by cross-store sync). */
+  upsertLocal: (territory: Territory) => void;
+  /** Clear any territory linked to a deleted distributor (local mirror). */
+  clearDistributorLocal: (distributorId: string) => void;
 }
 
-const performanceFromRatio = (sales: number, target: number): PerformanceStatus => {
-  if (!target) return "average";
-  const r = sales / target;
-  if (r >= 1) return "excellent";
-  if (r >= 0.85) return "good";
-  if (r >= 0.65) return "average";
-  return "underperforming";
-};
+function toInput(t: Partial<Territory>): TerritoryInput {
+  return {
+    name: t.name ?? "",
+    coverageArea: t.coverageArea ?? "",
+    notes: t.notes,
+    color: t.color,
+    coordinates: t.coordinates,
+    distributorId: t.distributorId ?? null,
+    monthlySales: t.monthlySales,
+    targetSales: t.targetSales,
+    performance: t.performance,
+    outlets: t.outlets,
+  };
+}
 
-export const useTerritoryStore = create<TerritoryState>()(
-  persist(
-    (set, get) => ({
-      territories: [],
-      draft: null,
-      selectedId: null,
-      focusTick: 0,
-      initialized: false,
+/** Recompute distributors' assignedTerritoryId from the territory list. */
+function syncDistributorAssignments(territories: Territory[]) {
+  const byDistributor = new Map<string, string>();
+  for (const t of territories) {
+    if (t.distributorId) byDistributor.set(t.distributorId, t.id);
+  }
+  const dStore = useDistributorStore.getState();
+  dStore.distributors.forEach((d) => {
+    const next = byDistributor.get(d.id);
+    if (d.assignedTerritoryId !== next) {
+      dStore.upsertLocal({ ...d, assignedTerritoryId: next });
+    }
+  });
+}
 
-      init: () => {
-        if (get().initialized) return;
-        if (get().territories.length === 0) {
-          set({ territories: mockTerritories, initialized: true });
-        } else {
-          set({ initialized: true });
-        }
-      },
+export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
+  territories: [],
+  draft: null,
+  selectedId: null,
+  focusTick: 0,
+  initialized: false,
+  loading: false,
+  error: null,
 
-      setDraft: (draft) => set({ draft }),
+  load: async () => {
+    set({ loading: true, error: null });
+    try {
+      const territories = await territoryApi.list();
+      set({ territories, initialized: true, loading: false });
+    } catch (e) {
+      set({ loading: false, error: (e as Error).message });
+    }
+  },
 
-      addTerritory: (input) => {
-        const id = `t-${Date.now().toString(36)}`;
-        const usedColors = new Set(get().territories.map((t) => t.color));
-        const color =
-          input.color ||
-          TERRITORY_COLORS.find((c) => !usedColors.has(c)) ||
-          TERRITORY_COLORS[get().territories.length % TERRITORY_COLORS.length];
-        const monthlySales = Math.floor(100000 + Math.random() * 200000);
-        const targetSales = Math.floor(monthlySales * (0.85 + Math.random() * 0.4));
-        const territory: Territory = {
-          id,
-          name: input.name,
-          coverageArea: input.coverageArea,
-          notes: input.notes,
-          color,
-          coordinates: input.coordinates,
-          distributorId: input.distributorId,
-          createdAt: new Date().toISOString(),
-          monthlySales,
-          targetSales,
-          performance: performanceFromRatio(monthlySales, targetSales),
-          outlets: Math.floor(60 + Math.random() * 150),
-        };
-        set((s) => ({ territories: [...s.territories, territory], draft: null, selectedId: id }));
-        return territory;
-      },
+  setDraft: (draft) => set({ draft }),
 
-      addImportedTerritories: (items) => {
-        if (!items.length) return 0;
-        let count = 0;
-        set((s) => {
-          const existing = [...s.territories];
-          const usedColors = new Set(existing.map((t) => t.color));
-          const usedDistributors = new Set(
-            existing.map((t) => t.distributorId).filter(Boolean) as string[],
-          );
+  addTerritory: async (input) => {
+    const created = await territoryApi.create(toInput(input as Partial<Territory>));
+    set((s) => ({ territories: [...s.territories, created], draft: null, selectedId: created.id }));
+    if (created.distributorId) syncDistributorAssignments(get().territories);
+    return created;
+  },
 
-          for (const item of items) {
-            const baseColor = item.color && /^#?[0-9a-fA-F]{6}$/.test(item.color)
-              ? item.color.startsWith("#")
-                ? item.color
-                : `#${item.color}`
-              : TERRITORY_COLORS.find((c) => !usedColors.has(c)) ??
-                TERRITORY_COLORS[(existing.length + count) % TERRITORY_COLORS.length];
-            usedColors.add(baseColor);
+  addImportedTerritories: async (items) => {
+    if (!items.length) return 0;
+    let count = 0;
+    for (const item of items) {
+      const created = await territoryApi.create({
+        name: item.name,
+        coverageArea: item.coverageArea,
+        notes: item.notes,
+        color: item.color,
+        coordinates: item.coordinates,
+        distributorId: item.distributorId ?? null,
+      });
+      set((s) => ({ territories: [...s.territories, created] }));
+      count++;
+    }
+    syncDistributorAssignments(get().territories);
+    return count;
+  },
 
-            const distributorId =
-              item.distributorId && !usedDistributors.has(item.distributorId)
-                ? item.distributorId
-                : undefined;
-            if (distributorId) usedDistributors.add(distributorId);
+  updateTerritory: async (id, patch) => {
+    const current = get().territories.find((t) => t.id === id);
+    if (!current) return;
+    const updated = await territoryApi.update(id, toInput({ ...current, ...patch }));
+    set((s) => ({ territories: s.territories.map((t) => (t.id === id ? updated : t)) }));
+    syncDistributorAssignments(get().territories);
+  },
 
-            const monthlySales = Math.floor(100000 + Math.random() * 200000);
-            const targetSales = Math.floor(monthlySales * (0.85 + Math.random() * 0.4));
-            const id = `t-${Date.now().toString(36)}-${count}`;
-            existing.push({
-              id,
-              name: item.name,
-              coverageArea: item.coverageArea,
-              notes: item.notes,
-              color: baseColor,
-              coordinates: item.coordinates,
-              distributorId,
-              createdAt: new Date().toISOString(),
-              monthlySales,
-              targetSales,
-              performance: performanceFromRatio(monthlySales, targetSales),
-              outlets: Math.floor(60 + Math.random() * 150),
-            });
-            count++;
-          }
-          return { territories: existing };
-        });
-        return count;
-      },
+  updateCoordinates: async (id, coordinates) => {
+    const updated = await territoryApi.updateCoordinates(id, coordinates);
+    set((s) => ({ territories: s.territories.map((t) => (t.id === id ? updated : t)) }));
+  },
 
-      updateTerritory: (id, patch) =>
-        set((s) => ({
-          territories: s.territories.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
+  removeTerritory: async (id) => {
+    await territoryApi.remove(id);
+    set((s) => ({
+      territories: s.territories.filter((t) => t.id !== id),
+      selectedId: s.selectedId === id ? null : s.selectedId,
+    }));
+    syncDistributorAssignments(get().territories);
+  },
 
-      updateCoordinates: (id, coordinates) =>
-        set((s) => ({
-          territories: s.territories.map((t) => (t.id === id ? { ...t, coordinates } : t)),
-        })),
+  setSelected: (id) => set((s) => ({ selectedId: id, focusTick: s.focusTick + 1 })),
 
-      removeTerritory: (id) =>
-        set((s) => ({
-          territories: s.territories.filter((t) => t.id !== id),
-          selectedId: s.selectedId === id ? null : s.selectedId,
-        })),
+  assignDistributor: async (territoryId, distributorId) => {
+    const updated = await territoryApi.assign(territoryId, distributorId ?? null);
+    set((s) => ({ territories: s.territories.map((t) => (t.id === territoryId ? updated : t)) }));
+    syncDistributorAssignments(get().territories);
+  },
 
-      setSelected: (id) => set((s) => ({ selectedId: id, focusTick: s.focusTick + 1 })),
+  upsertLocal: (territory) =>
+    set((s) => ({
+      territories: s.territories.some((t) => t.id === territory.id)
+        ? s.territories.map((t) => (t.id === territory.id ? territory : t))
+        : [...s.territories, territory],
+    })),
 
-      assignDistributor: (territoryId, distributorId) =>
-        set((s) => ({
-          territories: s.territories.map((t) =>
-            t.id === territoryId ? { ...t, distributorId } : t,
-          ),
-        })),
-    }),
-    {
-      name: "dtm.territories",
-      partialize: (state) => ({ territories: state.territories }),
-    },
-  ),
-);
+  clearDistributorLocal: (distributorId) =>
+    set((s) => ({
+      territories: s.territories.map((t) =>
+        t.distributorId === distributorId ? { ...t, distributorId: undefined } : t,
+      ),
+    })),
+}));

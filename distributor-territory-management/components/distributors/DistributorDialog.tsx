@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -48,9 +48,12 @@ interface Props {
 export function DistributorDialog({ open, onOpenChange, editing }: Props) {
   const addDistributor = useDistributorStore((s) => s.addDistributor);
   const updateDistributor = useDistributorStore((s) => s.updateDistributor);
+  const assignTerritory = useDistributorStore((s) => s.assignTerritory);
   const distributors = useDistributorStore((s) => s.distributors);
   const territories = useTerritoryStore((s) => s.territories);
-  const assignDistributorToTerritory = useTerritoryStore((s) => s.assignDistributor);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -75,6 +78,7 @@ export function DistributorDialog({ open, onOpenChange, editing }: Props) {
 
   useEffect(() => {
     if (open) {
+      setError(null);
       reset({
         name: editing?.name ?? "",
         contactPerson: editing?.contactPerson ?? "",
@@ -88,29 +92,38 @@ export function DistributorDialog({ open, onOpenChange, editing }: Props) {
     }
   }, [open, editing, reset]);
 
-  const onSubmit = (values: FormValues) => {
-    if (editing) {
-      const prevTerritory = editing.assignedTerritoryId;
-      updateDistributor(editing.id, {
-        ...values,
-        assignedTerritoryId: values.assignedTerritoryId || undefined,
-      });
-      if (prevTerritory && prevTerritory !== values.assignedTerritoryId) {
-        assignDistributorToTerritory(prevTerritory, undefined);
+  const onSubmit = async (values: FormValues) => {
+    setSubmitting(true);
+    try {
+      const nextTerritory = values.assignedTerritoryId || undefined;
+      if (editing) {
+        const prevTerritory = editing.assignedTerritoryId;
+        await updateDistributor(editing.id, {
+          name: values.name,
+          contactPerson: values.contactPerson,
+          email: values.email,
+          phone: values.phone,
+          address: values.address,
+          city: values.city,
+          status: values.status,
+        });
+        if (prevTerritory !== nextTerritory) {
+          // assignTerritory routes through the territory API and keeps both
+          // stores in sync (clearing the previous link when needed).
+          await assignTerritory(editing.id, nextTerritory);
+        }
+      } else {
+        await addDistributor({
+          ...values,
+          assignedTerritoryId: nextTerritory,
+        });
       }
-      if (values.assignedTerritoryId) {
-        assignDistributorToTerritory(values.assignedTerritoryId, editing.id);
-      }
-    } else {
-      const created = addDistributor({
-        ...values,
-        assignedTerritoryId: values.assignedTerritoryId || undefined,
-      });
-      if (values.assignedTerritoryId) {
-        assignDistributorToTerritory(values.assignedTerritoryId, created.id);
-      }
+      onOpenChange(false);
+    } catch (err) {
+      setError((err as Error).message || "Failed to save distributor.");
+    } finally {
+      setSubmitting(false);
     }
-    onOpenChange(false);
   };
 
   const usedTerritories = new Set(
@@ -208,12 +221,18 @@ export function DistributorDialog({ open, onOpenChange, editing }: Props) {
           </div>
         </form>
 
+        {error && (
+          <p className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+            {error}
+          </p>
+        )}
+
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button form="distributor-form" type="submit" variant="gradient">
-            {editing ? "Save changes" : "Create distributor"}
+          <Button form="distributor-form" type="submit" variant="gradient" disabled={submitting}>
+            {submitting ? "Saving…" : editing ? "Save changes" : "Create distributor"}
           </Button>
         </DialogFooter>
       </DialogContent>

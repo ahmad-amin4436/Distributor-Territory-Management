@@ -43,7 +43,6 @@ export default function DistributorsPage() {
   const distributors = useDistributorStore((s) => s.distributors);
   const removeDistributor = useDistributorStore((s) => s.removeDistributor);
   const territories = useTerritoryStore((s) => s.territories);
-  const assignDistributorToTerritory = useTerritoryStore((s) => s.assignDistributor);
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -84,12 +83,10 @@ export default function DistributorsPage() {
 
   const confirmDelete = (d: Distributor) => setDeleteTarget(d);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    if (deleteTarget.assignedTerritoryId) {
-      assignDistributorToTerritory(deleteTarget.assignedTerritoryId, undefined);
-    }
-    removeDistributor(deleteTarget.id);
+    // The backend clears any territory link on delete; the store mirrors it.
+    await removeDistributor(deleteTarget.id);
   };
 
   return (

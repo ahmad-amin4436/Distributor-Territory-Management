@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/store/authStore";
 import { useHydrated } from "@/hooks/useHydrated";
+import { ApiError } from "@/lib/api";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -24,7 +25,9 @@ export default function LoginPage() {
   const hydrated = useHydrated();
   const user = useAuthStore((s) => s.user);
   const signIn = useAuthStore((s) => s.signIn);
+  const registerUser = useAuthStore((s) => s.register);
   const [submitting, setSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const {
     register,
@@ -42,13 +45,28 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-    signIn({
-      email: values.email,
-      name: values.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      role: "Territory Admin",
-    });
-    router.replace("/dashboard");
+    setAuthError(null);
+    try {
+      try {
+        await signIn(values.email, values.password);
+      } catch (err) {
+        // No account yet for this email — register it on the fly (demo UX).
+        if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+          await registerUser(values.email, values.password);
+        } else {
+          throw err;
+        }
+      }
+      router.replace("/dashboard");
+    } catch (err) {
+      setAuthError(
+        err instanceof ApiError
+          ? err.message
+          : "Unable to reach the server. Is the API running?",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const fillDemo = () => {
@@ -150,6 +168,12 @@ export default function LoginPage() {
               )}
             </div>
 
+            {authError && (
+              <p className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+                {authError}
+              </p>
+            )}
+
             <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={submitting}>
               {submitting ? "Signing in…" : "Sign in"}
               <ArrowRight className="h-4 w-4" />
@@ -160,7 +184,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Demo build · no real authentication · data persisted locally
+            New emails are registered automatically · data persisted via the API
           </p>
         </div>
       </div>

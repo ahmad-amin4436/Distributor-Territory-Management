@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlcmd -?)",
+      "Bash(dotnet --version)",
+      "Bash(sqlcmd -S \"DESKTOP-36875F2\\\\SQLEXPRESS\" -U sa -P \"abcd@1234\" -C -Q \"SELECT @@VERSION;\")",
+      "Bash(find . -name \"Controllers\" -type d)",
+      "Bash(ls Controllers)",
+      "Bash(sqlcmd -S \"DESKTOP-36875F2\\\\SQLEXPRESS\" -U sa -P \"abcd@1234\" -C -i 01_Schema.sql)",
+      "Bash(sqlcmd -S \"DESKTOP-36875F2\\\\SQLEXPRESS\" -U sa -P \"abcd@1234\" -C -i 02_StoredProcedures.sql)",
+      "Bash(sqlcmd -S \"DESKTOP-36875F2\\\\SQLEXPRESS\" -U sa -P \"abcd@1234\" -C -i 03_Seed.sql)",
+      "Bash(sqlcmd -S \"DESKTOP-36875F2\\\\SQLEXPRESS\" -U sa -P \"abcd@1234\" -C -Q \"SET QUOTED_IDENTIFIER ON; USE DTMS; CREATE UNIQUE INDEX UX_Territories_DistributorId ON dbo.Territories\\(DistributorId\\) WHERE DistributorId IS NOT NULL;\")",
+      "Bash(sqlcmd -S \"DESKTOP-36875F2\\\\SQLEXPRESS\" -U sa -P \"abcd@1234\" -C -d DTMS -Q \"EXEC dbo.usp_Distributor_GetAll;\" -h -1 -W)",
+      "Bash(dotnet package *)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet build *)",
+      "Bash(ASPNETCORE_ENVIRONMENT=Development dotnet run --no-build --urls \"http://localhost:5168\")",
+      "Bash(curl -s http://localhost:5168/api/distributors)",
+      "Bash(curl -s http://localhost:5168/api/territories)"
+    ]
+  }
+}

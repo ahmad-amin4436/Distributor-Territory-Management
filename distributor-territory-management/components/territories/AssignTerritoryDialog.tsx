@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -53,11 +53,14 @@ export function AssignTerritoryDialog({
   const territories = useTerritoryStore((s) => s.territories);
   const addTerritory = useTerritoryStore((s) => s.addTerritory);
   const updateTerritory = useTerritoryStore((s) => s.updateTerritory);
+  const assignDistributor = useTerritoryStore((s) => s.assignDistributor);
   const setDraft = useTerritoryStore((s) => s.setDraft);
   const setSelected = useTerritoryStore((s) => s.setSelected);
 
   const distributors = useDistributorStore((s) => s.distributors);
-  const assignTerritoryToDistributor = useDistributorStore((s) => s.assignTerritory);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const editing = editingTerritoryId
     ? territories.find((t) => t.id === editingTerritoryId)
@@ -82,6 +85,7 @@ export function AssignTerritoryDialog({
 
   useEffect(() => {
     if (open) {
+      setError(null);
       reset({
         name: editing?.name ?? `Territory ${territories.length + 1}`,
         coverageArea: editing?.coverageArea ?? "",
@@ -102,36 +106,37 @@ export function AssignTerritoryDialog({
     (d) => d.status !== "inactive" && (!usedDistributorIds.has(d.id) || d.id === editing?.distributorId),
   );
 
-  const onSubmit = (values: FormValues) => {
-    if (editing) {
-      const previousDistributor = editing.distributorId;
-      updateTerritory(editing.id, {
-        name: values.name,
-        coverageArea: values.coverageArea,
-        notes: values.notes,
-        distributorId: values.distributorId || undefined,
-      });
-      if (previousDistributor && previousDistributor !== values.distributorId) {
-        assignTerritoryToDistributor(previousDistributor, undefined);
+  const onSubmit = async (values: FormValues) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const nextDistributor = values.distributorId || undefined;
+      if (editing) {
+        await updateTerritory(editing.id, {
+          name: values.name,
+          coverageArea: values.coverageArea,
+          notes: values.notes,
+        });
+        if (editing.distributorId !== nextDistributor) {
+          await assignDistributor(editing.id, nextDistributor);
+        }
+      } else if (draftCoordinates && draftCoordinates.length >= 3) {
+        const territory = await addTerritory({
+          name: values.name,
+          coverageArea: values.coverageArea,
+          notes: values.notes,
+          coordinates: draftCoordinates,
+          distributorId: nextDistributor,
+        });
+        setSelected(territory.id);
       }
-      if (values.distributorId) {
-        assignTerritoryToDistributor(values.distributorId, editing.id);
-      }
-    } else if (draftCoordinates && draftCoordinates.length >= 3) {
-      const territory = addTerritory({
-        name: values.name,
-        coverageArea: values.coverageArea,
-        notes: values.notes,
-        coordinates: draftCoordinates,
-        distributorId: values.distributorId || undefined,
-      });
-      if (values.distributorId) {
-        assignTerritoryToDistributor(values.distributorId, territory.id);
-      }
-      setSelected(territory.id);
+      setDraft(null);
+      onOpenChange(false);
+    } catch (err) {
+      setError((err as Error).message || "Failed to save territory.");
+    } finally {
+      setSubmitting(false);
     }
-    setDraft(null);
-    onOpenChange(false);
   };
 
   const handleCancel = () => {
@@ -213,12 +218,18 @@ export function AssignTerritoryDialog({
           </div>
         </form>
 
+        {error && (
+          <p className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+            {error}
+          </p>
+        )}
+
         <DialogFooter className="gap-2">
-          <Button type="button" variant="outline" onClick={handleCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" form="assign-territory-form" variant="gradient">
-            {editing ? "Save changes" : "Save territory"}
+          <Button type="submit" form="assign-territory-form" variant="gradient" disabled={submitting}>
+            {submitting ? "Saving…" : editing ? "Save changes" : "Save territory"}
           </Button>
         </DialogFooter>
       </DialogContent>

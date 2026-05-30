@@ -8,12 +8,31 @@ A premium, demo-ready Next.js dashboard for managing distributor sales territori
 
 ## Quick start
 
+This app now talks to the **DTMS backend API** (`../backend/dtms`) for auth and
+all distributor/territory data. Start the backend first (see its README), then:
+
 ```bash
 npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. You will be redirected to `/login`. Use any email + password, or click **"Use demo credentials"**.
+Open <http://localhost:3000>. You will be redirected to `/login`. Sign in with
+any email + password — if no account exists for that email it is registered
+automatically. The bearer token is stored in `localStorage` and sent on every
+API request.
+
+### Configuration
+
+The API base URL defaults to `http://localhost:5168/api`. Override it with an
+env var if the backend runs elsewhere:
+
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:5168/api
+```
+
+Sales heatmap and trend charts still use local mock data (`mock/`), as there is
+no sales backend yet. Distributors and territories are fully API-backed.
 
 ```bash
 # production
