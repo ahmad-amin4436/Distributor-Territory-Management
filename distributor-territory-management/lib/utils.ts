@@ -5,10 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = "USD") {
+export function formatCurrency(amount: number, currency = "PKR") {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
+    currencyDisplay: "narrowSymbol",
     maximumFractionDigits: 0,
   }).format(amount);
 }
@@ -17,8 +18,12 @@ export function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+/** Compact currency, e.g. "Rs 1.9M". */
 export function formatCompact(value: number) {
   return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "PKR",
+    currencyDisplay: "narrowSymbol",
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value);

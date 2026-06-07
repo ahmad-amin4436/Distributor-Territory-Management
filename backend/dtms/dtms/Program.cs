@@ -74,14 +74,14 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// Allow the Next.js dev server to call the API.
+// Allow the Next.js dev server to call the API from any origin (the dev server
+// may bind 3000, 3001, etc.). Auth uses a Bearer token in the Authorization
+// header rather than cookies, so AllowAnyOrigin is safe (no credentials).
 const string FrontendCors = "FrontendCors";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCors, policy =>
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000")
+        policy.AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod());
 });

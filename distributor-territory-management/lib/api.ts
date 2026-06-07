@@ -137,6 +137,7 @@ export interface TerritoryInput {
   targetSales?: number;
   performance?: string;
   outlets?: number;
+  population?: number;
 }
 
 export const territoryApi = {

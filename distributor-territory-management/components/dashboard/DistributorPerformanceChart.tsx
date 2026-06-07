@@ -5,7 +5,6 @@ import {
   RadialBarChart,
   ResponsiveContainer,
   Tooltip,
-  Legend,
 } from "recharts";
 import { useMemo } from "react";
 import { useTerritoryStore } from "@/store/territoryStore";
@@ -44,23 +43,19 @@ export function DistributorPerformanceChart() {
         >
           <RadialBar dataKey="value" cornerRadius={8} background={{ fill: "rgba(255,255,255,0.05)" }} />
           <Tooltip
+            cursor={{ fill: "transparent" }}
             contentStyle={{
               background: "#111729",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 10,
               fontSize: 12,
             }}
+            itemStyle={{ color: "#ffffff" }}
+            labelStyle={{ color: "#ffffff" }}
             formatter={(value: number, _name, entry: any) => [
               `${value}% of target`,
               entry?.payload?.fullName,
             ]}
-          />
-          <Legend
-            iconType="circle"
-            layout="vertical"
-            verticalAlign="middle"
-            align="right"
-            wrapperStyle={{ fontSize: 11, paddingLeft: 12 }}
           />
         </RadialBarChart>
       </ResponsiveContainer>

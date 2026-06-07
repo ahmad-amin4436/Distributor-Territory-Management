@@ -40,6 +40,7 @@ export interface Territory {
   targetSales: number;
   performance: PerformanceStatus;
   outlets: number;
+  population: number;
 }
 
 export interface SalesPoint {

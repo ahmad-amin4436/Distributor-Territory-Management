@@ -31,6 +31,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 200000,
     performance: "good",
     outlets: 142,
+    population: 410000,
   },
   {
     id: "t-002",
@@ -51,6 +52,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 300000,
     performance: "excellent",
     outlets: 198,
+    population: 520000,
   },
   {
     id: "t-003",
@@ -71,6 +73,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 260000,
     performance: "good",
     outlets: 167,
+    population: 380000,
   },
   {
     id: "t-004",
@@ -91,6 +94,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 240000,
     performance: "good",
     outlets: 184,
+    population: 465000,
   },
   {
     id: "t-005",
@@ -111,6 +115,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 180000,
     performance: "average",
     outlets: 121,
+    population: 290000,
   },
   {
     id: "t-006",
@@ -131,6 +136,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 280000,
     performance: "excellent",
     outlets: 156,
+    population: 340000,
   },
   {
     id: "t-007",
@@ -150,6 +156,7 @@ export const mockTerritories: Territory[] = [
     targetSales: 150000,
     performance: "underperforming",
     outlets: 78,
+    population: 175000,
   },
   {
     id: "t-008",
@@ -169,5 +176,6 @@ export const mockTerritories: Territory[] = [
     targetSales: 200000,
     performance: "underperforming",
     outlets: 94,
+    population: 210000,
   },
 ];

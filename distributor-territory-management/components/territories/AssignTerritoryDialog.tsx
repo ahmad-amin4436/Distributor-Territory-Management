@@ -28,10 +28,18 @@ import { useTerritoryStore } from "@/store/territoryStore";
 import { useDistributorStore } from "@/store/distributorStore";
 import type { LatLng } from "@/types";
 
+const nonNegativeNumber = (label: string) =>
+  z.coerce
+    .number({ invalid_type_error: `Enter a valid ${label}` })
+    .min(0, `${label} cannot be negative`);
+
 const schema = z.object({
   name: z.string().min(2, "Name is required"),
   coverageArea: z.string().min(2, "Coverage area is required"),
   distributorId: z.string().optional(),
+  monthlySales: nonNegativeNumber("amount"),
+  targetSales: nonNegativeNumber("target"),
+  population: nonNegativeNumber("population"),
   notes: z.string().optional(),
 });
 
@@ -79,6 +87,9 @@ export function AssignTerritoryDialog({
       name: "",
       coverageArea: "",
       distributorId: "",
+      monthlySales: 0,
+      targetSales: 0,
+      population: 0,
       notes: "",
     },
   });
@@ -90,6 +101,9 @@ export function AssignTerritoryDialog({
         name: editing?.name ?? `Territory ${territories.length + 1}`,
         coverageArea: editing?.coverageArea ?? "",
         distributorId: editing?.distributorId ?? "",
+        monthlySales: editing?.monthlySales ?? 0,
+        targetSales: editing?.targetSales ?? 0,
+        population: editing?.population ?? 0,
         notes: editing?.notes ?? "",
       });
     }
@@ -116,6 +130,9 @@ export function AssignTerritoryDialog({
           name: values.name,
           coverageArea: values.coverageArea,
           notes: values.notes,
+          monthlySales: values.monthlySales,
+          targetSales: values.targetSales,
+          population: values.population,
         });
         if (editing.distributorId !== nextDistributor) {
           await assignDistributor(editing.id, nextDistributor);
@@ -127,6 +144,9 @@ export function AssignTerritoryDialog({
           notes: values.notes,
           coordinates: draftCoordinates,
           distributorId: nextDistributor,
+          monthlySales: values.monthlySales,
+          targetSales: values.targetSales,
+          population: values.population,
         });
         setSelected(territory.id);
       }
@@ -176,6 +196,50 @@ export function AssignTerritoryDialog({
             />
             {errors.coverageArea && (
               <p className="text-xs text-rose-400">{errors.coverageArea.message}</p>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="monthly-sales">Monthly sales (PKR)</Label>
+              <Input
+                id="monthly-sales"
+                type="number"
+                min={0}
+                step={1000}
+                {...register("monthlySales")}
+                placeholder="312000"
+              />
+              {errors.monthlySales && (
+                <p className="text-xs text-rose-400">{errors.monthlySales.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="target-sales">Target sales (PKR)</Label>
+              <Input
+                id="target-sales"
+                type="number"
+                min={0}
+                step={1000}
+                {...register("targetSales")}
+                placeholder="300000"
+              />
+              {errors.targetSales && (
+                <p className="text-xs text-rose-400">{errors.targetSales.message}</p>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="population">Population</Label>
+            <Input
+              id="population"
+              type="number"
+              min={0}
+              step={1}
+              {...register("population")}
+              placeholder="e.g. 250000"
+            />
+            {errors.population && (
+              <p className="text-xs text-rose-400">{errors.population.message}</p>
             )}
           </div>
           <div className="space-y-2">

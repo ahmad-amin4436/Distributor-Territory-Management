@@ -136,7 +136,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT  Id, Name, CoverageArea, Notes, Color, DistributorId, CreatedAt,
-            MonthlySales, TargetSales, Performance, Outlets
+            MonthlySales, TargetSales, Performance, Outlets, Population
     FROM    dbo.Territories
     ORDER BY CreatedAt;
 
@@ -152,7 +152,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT  Id, Name, CoverageArea, Notes, Color, DistributorId, CreatedAt,
-            MonthlySales, TargetSales, Performance, Outlets
+            MonthlySales, TargetSales, Performance, Outlets, Population
     FROM    dbo.Territories
     WHERE   Id = @Id;
 
@@ -175,6 +175,7 @@ CREATE OR ALTER PROCEDURE dbo.usp_Territory_Insert
     @TargetSales   DECIMAL(18,2),
     @Performance   NVARCHAR(20),
     @Outlets       INT,
+    @Population    INT,
     @Coordinates   dbo.CoordinateList READONLY
 AS
 BEGIN
@@ -188,12 +189,12 @@ BEGIN
 
     INSERT INTO dbo.Territories
         (Id, Name, CoverageArea, Notes, Color, DistributorId, CreatedAt,
-         MonthlySales, TargetSales, Performance, Outlets)
+         MonthlySales, TargetSales, Performance, Outlets, Population)
     VALUES
         (@Id, @Name, @CoverageArea, @Notes, ISNULL(@Color, '#6366f1'), @DistributorId,
          ISNULL(@CreatedAt, SYSUTCDATETIME()),
          ISNULL(@MonthlySales, 0), ISNULL(@TargetSales, 0),
-         ISNULL(@Performance, 'average'), ISNULL(@Outlets, 0));
+         ISNULL(@Performance, 'average'), ISNULL(@Outlets, 0), ISNULL(@Population, 0));
 
     INSERT INTO dbo.TerritoryCoordinates (TerritoryId, PointOrder, Lat, Lng)
     SELECT @Id, PointOrder, Lat, Lng FROM @Coordinates;
@@ -215,6 +216,7 @@ CREATE OR ALTER PROCEDURE dbo.usp_Territory_Update
     @TargetSales   DECIMAL(18,2),
     @Performance   NVARCHAR(20),
     @Outlets       INT,
+    @Population    INT,
     @Coordinates   dbo.CoordinateList READONLY,
     @ReplaceCoordinates BIT = 1
 AS
@@ -237,6 +239,7 @@ BEGIN
            TargetSales   = ISNULL(@TargetSales, TargetSales),
            Performance   = ISNULL(@Performance, Performance),
            Outlets       = ISNULL(@Outlets, Outlets),
+           Population     = ISNULL(@Population, Population),
            UpdatedAt     = SYSUTCDATETIME()
     WHERE  Id = @Id;
 

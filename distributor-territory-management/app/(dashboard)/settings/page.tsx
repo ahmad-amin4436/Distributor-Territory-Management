@@ -117,7 +117,7 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
-                <Input id="currency" defaultValue="USD" />
+                <Input id="currency" defaultValue="PKR" />
               </div>
             </div>
             <Separator />

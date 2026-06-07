@@ -22,7 +22,12 @@ interface TerritoryState {
   load: () => Promise<void>;
   setDraft: (draft: DraftTerritory | null) => void;
   addTerritory: (
-    input: Omit<Territory, "id" | "createdAt" | "monthlySales" | "targetSales" | "performance" | "outlets" | "color"> & { color?: string },
+    input: Omit<Territory, "id" | "createdAt" | "monthlySales" | "targetSales" | "performance" | "outlets" | "population" | "color"> & {
+      color?: string;
+      monthlySales?: number;
+      targetSales?: number;
+      population?: number;
+    },
   ) => Promise<Territory>;
   addImportedTerritories: (items: ImportedTerritory[]) => Promise<number>;
   updateTerritory: (id: string, patch: Partial<Territory>) => Promise<void>;
@@ -48,6 +53,7 @@ function toInput(t: Partial<Territory>): TerritoryInput {
     targetSales: t.targetSales,
     performance: t.performance,
     outlets: t.outlets,
+    population: t.population,
   };
 }
 

@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Distributor Territory Management",
+  title: "Pak Asian Foods — Distributor Territory Management",
   description:
-    "Premium GIS dashboard for managing distributor sales territories on an interactive city map.",
+    "Pak Asian Foods GIS dashboard for managing distributor sales territories on an interactive city map.",
 };
 
 export default function RootLayout({

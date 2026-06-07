@@ -6,6 +6,7 @@ import {
   MapPin,
   Phone,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +128,14 @@ export function TerritoryPopupCard({ territory, distributor }: Props) {
             Outlets covered
           </span>
           <span className="font-semibold">{territory.outlets}</span>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 px-3 py-2 text-xs">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Users className="h-3.5 w-3.5" />
+            Population
+          </span>
+          <span className="font-semibold">{territory.population.toLocaleString()}</span>
         </div>
       </div>
     </div>

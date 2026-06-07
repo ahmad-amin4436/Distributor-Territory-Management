@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Map as MapIcon, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,12 +87,16 @@ export default function LoginPage() {
       <div className="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-2">
         <div className="hidden flex-col gap-8 lg:flex">
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-teal-400 shadow-lg shadow-indigo-500/30">
-              <MapIcon className="h-6 w-6 text-white" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Pak Asian Foods"
+              width={642}
+              height={414}
+              priority
+              className="h-14 w-auto object-contain"
+            />
             <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Enterprise GIS</p>
-              <h2 className="text-xl font-semibold">TerritoryOS</h2>
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Distributor Territory Management</p>
             </div>
           </div>
           <div className="space-y-6">
@@ -103,14 +108,14 @@ export default function LoginPage() {
               Draw, assign, and monitor every <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-teal-300 bg-clip-text text-transparent">distributor territory</span> in one map.
             </h1>
             <p className="max-w-md text-muted-foreground">
-              A premium SaaS GIS dashboard for sales operations teams — purpose-built to streamline coverage planning,
+              A premium GIS dashboard for sales operations teams — purpose-built to streamline coverage planning,
               distributor onboarding, and performance tracking.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-sm">
+          {/* <div className="grid grid-cols-3 gap-3 text-sm">
             {[
               { v: "8", l: "Territories" },
-              { v: "$1.87M", l: "Monthly Sales" },
+              { v: "Rs 1.87M", l: "Monthly Sales" },
               { v: "1.2K", l: "Active Outlets" },
             ].map((s) => (
               <div key={s.l} className="glass gradient-border rounded-xl p-4">
@@ -118,15 +123,19 @@ export default function LoginPage() {
                 <div className="mt-1 text-xs text-muted-foreground">{s.l}</div>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
 
         <div className="glass gradient-border relative w-full rounded-2xl p-8 shadow-2xl shadow-black/40 animate-fade-in">
           <div className="mb-6 flex items-center gap-3 lg:hidden">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-teal-400">
-              <MapIcon className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="text-lg font-semibold">TerritoryOS</h2>
+            <Image
+              src="/logo.png"
+              alt="Pak Asian Foods"
+              width={642}
+              height={414}
+              priority
+              className="h-11 w-auto object-contain"
+            />
           </div>
 
           <h3 className="text-2xl font-semibold tracking-tight">Welcome back</h3>

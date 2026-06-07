@@ -25,16 +25,16 @@ GO
 IF NOT EXISTS (SELECT 1 FROM dbo.Territories)
 BEGIN
     INSERT INTO dbo.Territories
-        (Id, Name, CoverageArea, Notes, Color, DistributorId, CreatedAt, MonthlySales, TargetSales, Performance, Outlets)
+        (Id, Name, CoverageArea, Notes, Color, DistributorId, CreatedAt, MonthlySales, TargetSales, Performance, Outlets, Population)
     VALUES
-        ('t-001','North Zone','North Nazimabad, Nazimabad, North Karachi','Includes residential blocks and key markets in the north.','#6366f1','d-001','2024-04-15',184500,200000,'good',142),
-        ('t-002','South Coastal','Clifton, Defence Phase 1-5, Boat Basin','Premium retail corridor with high-end outlets.','#22c55e','d-002','2024-04-20',312000,300000,'excellent',198),
-        ('t-003','Central Business','Saddar, MA Jinnah Road, II Chundrigar','Dense commercial district with wholesale markets.','#f59e0b','d-003','2024-05-01',245800,260000,'good',167),
-        ('t-004','East Gardens','Gulshan-e-Iqbal, Gulistan-e-Jauhar','Family-oriented zone with strong FMCG demand.','#ec4899','d-004','2024-05-08',220300,240000,'good',184),
-        ('t-005','West Industrial','Orangi, SITE, Manghopir','Workforce dense — strong morning and evening traffic.','#06b6d4','d-005','2024-05-15',142500,180000,'average',121),
-        ('t-006','DHA Premium','DHA Phase 6-8, Khayaban-e-Ittehad','Upmarket residential — premium SKU performance.','#a855f7','d-006','2024-05-22',285900,280000,'excellent',156),
-        ('t-007','Northeast Hub','Federal B Area, Liaquatabad','Recently opened territory, ramping up.','#14b8a6',NULL,'2024-06-04',86400,150000,'underperforming',78),
-        ('t-008','Southwest Port','Korangi, Landhi Industrial','Industrial belt with B2B-heavy distribution.','#ef4444',NULL,'2024-06-11',118700,200000,'underperforming',94);
+        ('t-001','North Zone','North Nazimabad, Nazimabad, North Karachi','Includes residential blocks and key markets in the north.','#6366f1','d-001','2024-04-15',184500,200000,'good',142,410000),
+        ('t-002','South Coastal','Clifton, Defence Phase 1-5, Boat Basin','Premium retail corridor with high-end outlets.','#22c55e','d-002','2024-04-20',312000,300000,'excellent',198,520000),
+        ('t-003','Central Business','Saddar, MA Jinnah Road, II Chundrigar','Dense commercial district with wholesale markets.','#f59e0b','d-003','2024-05-01',245800,260000,'good',167,380000),
+        ('t-004','East Gardens','Gulshan-e-Iqbal, Gulistan-e-Jauhar','Family-oriented zone with strong FMCG demand.','#ec4899','d-004','2024-05-08',220300,240000,'good',184,465000),
+        ('t-005','West Industrial','Orangi, SITE, Manghopir','Workforce dense — strong morning and evening traffic.','#06b6d4','d-005','2024-05-15',142500,180000,'average',121,290000),
+        ('t-006','DHA Premium','DHA Phase 6-8, Khayaban-e-Ittehad','Upmarket residential — premium SKU performance.','#a855f7','d-006','2024-05-22',285900,280000,'excellent',156,340000),
+        ('t-007','Northeast Hub','Federal B Area, Liaquatabad','Recently opened territory, ramping up.','#14b8a6',NULL,'2024-06-04',86400,150000,'underperforming',78,175000),
+        ('t-008','Southwest Port','Korangi, Landhi Industrial','Industrial belt with B2B-heavy distribution.','#ef4444',NULL,'2024-06-11',118700,200000,'underperforming',94,210000);
 
     INSERT INTO dbo.TerritoryCoordinates (TerritoryId, PointOrder, Lat, Lng) VALUES
         ('t-001',0,24.9395,66.9856),('t-001',1,24.9568,67.0405),('t-001',2,24.9292,67.0561),('t-001',3,24.9027,67.0405),('t-001',4,24.9148,66.9893),

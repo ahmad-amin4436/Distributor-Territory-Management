@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -43,18 +44,25 @@ export function Sidebar() {
         collapsed ? "w-[76px]" : "w-64",
       )}
     >
-      <div className="flex h-16 items-center gap-3 px-5">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-teal-400 shadow-lg shadow-indigo-500/30">
-          <MapIcon className="h-4.5 w-4.5 text-white" />
-        </div>
-        {!collapsed && (
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold leading-none">TerritoryOS</span>
-            <span className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
-              Enterprise GIS
-            </span>
-          </div>
+      <div
+        className={cn(
+          "flex h-16 items-center px-5",
+          collapsed ? "justify-center px-2" : "gap-3",
         )}
+      >
+        <Link href="/dashboard" className="flex items-center" aria-label="Pak Asian Foods home">
+          <Image
+            src="/logo.png"
+            alt="Pak Asian Foods"
+            width={642}
+            height={414}
+            priority
+            className={cn(
+              "h-auto w-auto object-contain",
+              collapsed ? "max-h-9 max-w-9" : "max-h-11 max-w-[150px]",
+            )}
+          />
+        </Link>
       </div>
 
       <nav className="mt-4 flex-1 space-y-1 px-3">
@@ -89,17 +97,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-border p-3">
-        {!collapsed && (
-          <div className="glass mb-3 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-              <Users2 className="h-3.5 w-3.5 text-indigo-400" />
-              Need help?
-            </div>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Reach out to our solutions team for an onboarding walkthrough.
-            </p>
-          </div>
-        )}
+        
         <Button
           variant="ghost"
           size="sm"

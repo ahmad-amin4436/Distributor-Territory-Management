@@ -83,6 +83,7 @@ public class TerritoryRepository : ITerritoryRepository
         db.AddInParameter(cmd, "@TargetSales", DbType.Decimal, t.TargetSales);
         db.AddInParameter(cmd, "@Performance", DbType.String, (object?)t.Performance ?? DBNull.Value);
         db.AddInParameter(cmd, "@Outlets", DbType.Int32, t.Outlets);
+        db.AddInParameter(cmd, "@Population", DbType.Int32, t.Population);
         AddCoordinatesParameter(cmd, t.Coordinates);
 
         var ds = db.ExecuteDataSet(cmd);
@@ -103,6 +104,7 @@ public class TerritoryRepository : ITerritoryRepository
         db.AddInParameter(cmd, "@TargetSales", DbType.Decimal, t.TargetSales);
         db.AddInParameter(cmd, "@Performance", DbType.String, (object?)t.Performance ?? DBNull.Value);
         db.AddInParameter(cmd, "@Outlets", DbType.Int32, t.Outlets);
+        db.AddInParameter(cmd, "@Population", DbType.Int32, t.Population);
         AddCoordinatesParameter(cmd, t.Coordinates);
         db.AddInParameter(cmd, "@ReplaceCoordinates", DbType.Boolean, replaceCoordinates);
 
@@ -202,5 +204,6 @@ public class TerritoryRepository : ITerritoryRepository
         TargetSales = row.GetDecimal("TargetSales"),
         Performance = row.GetString("Performance"),
         Outlets = row.GetInt("Outlets"),
+        Population = row.GetInt("Population"),
     };
 }

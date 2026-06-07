@@ -71,6 +71,7 @@ public class TerritoriesController : ControllerBase
             TargetSales = targetSales,
             Performance = performance,
             Outlets = outlets,
+            Population = request.Population ?? 0,
         };
 
         var created = _repo.Insert(territory);
@@ -93,8 +94,12 @@ public class TerritoriesController : ControllerBase
         current.DistributorId = request.DistributorId;
         current.MonthlySales = request.MonthlySales ?? current.MonthlySales;
         current.TargetSales = request.TargetSales ?? current.TargetSales;
-        current.Performance = request.Performance ?? current.Performance;
         current.Outlets = request.Outlets ?? current.Outlets;
+        current.Population = request.Population ?? current.Population;
+        // Recompute performance from the (possibly updated) sales/target unless
+        // the client explicitly supplied a performance value.
+        current.Performance = request.Performance
+            ?? PerformanceFromRatio((double)current.MonthlySales, (double)current.TargetSales);
 
         var replaceCoordinates = request.Coordinates is { Count: >= 3 };
         if (replaceCoordinates) current.Coordinates = request.Coordinates!;

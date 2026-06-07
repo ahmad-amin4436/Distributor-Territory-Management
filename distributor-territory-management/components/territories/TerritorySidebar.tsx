@@ -102,7 +102,7 @@ export function TerritorySidebar({ onEdit, filters }: Props) {
                   <Ruler className="h-3 w-3" />
                   {area.toFixed(1)} km²
                 </span>
-                <span>${formatCompact(t.monthlySales)}</span>
+                <span>{formatCompact(t.monthlySales)}</span>
               </span>
             </div>
             <div className="mt-2 flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

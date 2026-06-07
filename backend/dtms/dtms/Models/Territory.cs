@@ -27,4 +27,7 @@ public class Territory
     public string Performance { get; set; } = "average";
 
     public int Outlets { get; set; }
+
+    /// <summary>User-entered population of the territory.</summary>
+    public int Population { get; set; }
 }

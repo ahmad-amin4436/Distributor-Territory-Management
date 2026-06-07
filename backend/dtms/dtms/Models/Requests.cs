@@ -52,6 +52,7 @@ public class TerritoryCreateRequest
     public decimal? TargetSales { get; set; }
     public string? Performance { get; set; }
     public int? Outlets { get; set; }
+    public int? Population { get; set; }
 }
 
 public class TerritoryUpdateRequest
@@ -69,6 +70,7 @@ public class TerritoryUpdateRequest
     public decimal? TargetSales { get; set; }
     public string? Performance { get; set; }
     public int? Outlets { get; set; }
+    public int? Population { get; set; }
 }
 
 /// <summary>Replace a territory's polygon vertices.</summary>

@@ -127,7 +127,7 @@ export default function SalesPage() {
                   <span className="font-medium">{t.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">${formatCompact(t.monthlySales)}</span>
+                  <span className="text-xs text-muted-foreground">{formatCompact(t.monthlySales)}</span>
                   <Badge
                     variant={
                       t.performance === "excellent"

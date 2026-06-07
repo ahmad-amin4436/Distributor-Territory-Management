@@ -69,6 +69,7 @@ BEGIN
         TargetSales     DECIMAL(18,2)  NOT NULL CONSTRAINT DF_Territories_TargetSales DEFAULT (0),
         Performance     NVARCHAR(20)   NOT NULL CONSTRAINT DF_Territories_Performance DEFAULT ('average'),
         Outlets         INT            NOT NULL CONSTRAINT DF_Territories_Outlets DEFAULT (0),
+        Population      INT            NOT NULL CONSTRAINT DF_Territories_Population DEFAULT (0),
         UpdatedAt       DATETIME2(0)   NOT NULL CONSTRAINT DF_Territories_UpdatedAt DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT CK_Territories_Performance
             CHECK (Performance IN ('excellent','good','average','underperforming')),
