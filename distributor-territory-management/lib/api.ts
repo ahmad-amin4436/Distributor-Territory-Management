@@ -3,8 +3,10 @@ import type { Distributor, Territory, LatLng, SessionUser } from "@/types";
 /**
  * Base URL of the DTMS backend API. Override with NEXT_PUBLIC_API_URL.
  */
+//export const API_BASE_URL =
+ // process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5168/api";
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5168/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://182.176.88.81/dtms/api";
 
 const TOKEN_KEY = "dtm.token";
 
