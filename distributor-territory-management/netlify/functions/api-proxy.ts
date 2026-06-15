@@ -26,7 +26,7 @@ export default async (req: Request): Promise<Response> => {
     // Build headers, forwarding all from the request
     const headers = new Headers();
     for (const [key, value] of req.headers.entries()) {
-      // Skip hop-by-hop headers
+      // Skip hop-by-hop headers that must not be forwarded
       if (
         [
           "connection",
@@ -34,6 +34,7 @@ export default async (req: Request): Promise<Response> => {
           "transfer-encoding",
           "upgrade",
           "host",
+          "content-length",
         ].includes(key.toLowerCase())
       ) {
         continue;
@@ -41,19 +42,36 @@ export default async (req: Request): Promise<Response> => {
       headers.set(key, value);
     }
 
+    // Prepare the body for the request
+    let body: BodyInit | null = null;
+    
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      // Clone the request to read the body
+      const clonedReq = req.clone();
+      body = await clonedReq.arrayBuffer();
+      
+      // If there's a body, make sure Content-Type is set
+      if (body && (body as ArrayBuffer).byteLength > 0) {
+        if (!headers.has("Content-Type")) {
+          headers.set("Content-Type", "application/json");
+        }
+      } else {
+        body = null;
+      }
+    }
+
     // Forward the request to the backend
     const response = await fetch(targetUrl, {
       method: req.method,
       headers,
-      body:
-        req.method !== "GET" && req.method !== "HEAD" ? await req.text() : null,
+      body,
     });
 
     // Return the response with CORS headers
     const responseHeaders = new Headers(response.headers);
     responseHeaders.set("Access-Control-Allow-Origin", "*");
-    responseHeaders.set("Access-Control-Allow-Methods", "*");
-    responseHeaders.set("Access-Control-Allow-Headers", "*");
+    responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+    responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
 
     return new Response(response.body, {
       status: response.status,
