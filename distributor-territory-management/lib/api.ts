@@ -44,7 +44,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  // When using the Netlify proxy, pass the path as a query parameter
+  const url =
+    API_BASE_URL === "/.netlify/functions/api-proxy"
+      ? `${API_BASE_URL}?path=${encodeURIComponent(path)}`
+      : `${API_BASE_URL}${path}`;
+
+  const res = await fetch(url, { ...options, headers });
 
   if (res.status === 401) {
     setToken(null);
