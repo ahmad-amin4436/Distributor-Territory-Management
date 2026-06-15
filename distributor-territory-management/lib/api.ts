@@ -2,11 +2,11 @@ import type { Distributor, Territory, LatLng, SessionUser } from "@/types";
 
 /**
  * Base URL of the DTMS backend API. Override with NEXT_PUBLIC_API_URL.
+ * On Netlify, requests go through a proxy function at /.netlify/functions/api-proxy
+ * which forwards to the backend. In dev, use localhost backend or set NEXT_PUBLIC_API_URL.
  */
-//export const API_BASE_URL =
- // process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5168/api";
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://182.176.88.81/dtms/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "/.netlify/functions/api-proxy";
 
 const TOKEN_KEY = "dtm.token";
 
@@ -44,7 +44,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  // When using the Netlify proxy, pass the path as a query parameter
+  const url =
+    API_BASE_URL === "/.netlify/functions/api-proxy"
+      ? `${API_BASE_URL}?path=${encodeURIComponent(path)}`
+      : `${API_BASE_URL}${path}`;
+
+  const res = await fetch(url, { ...options, headers });
 
   if (res.status === 401) {
     setToken(null);
