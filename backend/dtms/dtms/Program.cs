@@ -96,7 +96,11 @@ var app = builder.Build();
     app.UseSwaggerUI();
 //}
 
-app.UseHttpsRedirection();
+// CORS must run first so preflight OPTIONS responses are handled before any
+// redirect or auth middleware. UseHttpsRedirection is intentionally removed:
+// the server is HTTP-only behind a reverse proxy; the redirect to HTTPS caused
+// IIS's WebDAV module to intercept PUT requests and return 405 before the
+// request ever reached ASP.NET Core.
 app.UseCors(FrontendCors);
 app.UseAuthentication();
 app.UseAuthorization();
