@@ -29,7 +29,13 @@ export default function ReportsPage() {
       .map((t) => {
         const d = distributors.find((x) => x.id === t.distributorId);
         const pct = percent(t.monthlySales, t.targetSales);
-        return { ...t, distributorName: d?.name ?? "Unassigned", percentToTarget: pct };
+        // Derive status from the live % achieved, not the stale DB field.
+        const status =
+          pct >= 100 ? "excellent"
+          : pct >= 85 ? "good"
+          : pct >= 65 ? "average"
+          : "underperforming";
+        return { ...t, distributorName: d?.name ?? "Unassigned", percentToTarget: pct, status };
       })
       .sort((a, b) => b.percentToTarget - a.percentToTarget);
   }, [territories, distributors]);
@@ -46,7 +52,7 @@ export default function ReportsPage() {
           r.monthlySales,
           r.targetSales,
           `${r.percentToTarget}%`,
-          r.performance,
+          r.status,
         ].join(","),
       )
       .join("\n");
@@ -145,17 +151,17 @@ export default function ReportsPage() {
                   <TableCell>
                     <Badge
                       variant={
-                        r.performance === "excellent"
+                        r.status === "excellent"
                           ? "success"
-                          : r.performance === "good"
+                          : r.status === "good"
                             ? "info"
-                            : r.performance === "average"
+                            : r.status === "average"
                               ? "warning"
                               : "danger"
                       }
                       className="capitalize"
                     >
-                      {r.performance}
+                      {r.status}
                     </Badge>
                   </TableCell>
                 </TableRow>
