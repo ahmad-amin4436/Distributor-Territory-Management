@@ -49,13 +49,10 @@ public class TerritoriesController : ControllerBase
                     ?? TerritoryColors[existing.Count % TerritoryColors.Length];
         }
 
-        var rng = Random.Shared;
-        var monthlySales = request.MonthlySales ?? (decimal)Math.Floor(100000 + rng.NextDouble() * 200000);
-        var targetSales = request.TargetSales ?? (decimal)Math.Floor((double)monthlySales * (0.85 + rng.NextDouble() * 0.4));
-        var performance = string.IsNullOrWhiteSpace(request.Performance)
-            ? PerformanceFromRatio((double)monthlySales, (double)targetSales)
-            : request.Performance;
-        var outlets = request.Outlets ?? (int)Math.Floor(60 + rng.NextDouble() * 150);
+        var monthlySales = request.MonthlySales ?? 0;
+        var targetSales = request.TargetSales ?? 0;
+        var performance = PerformanceFromRatio((double)monthlySales, (double)targetSales);
+        var outlets = request.Outlets ?? 0;
 
         var territory = new Territory
         {
