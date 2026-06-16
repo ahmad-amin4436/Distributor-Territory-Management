@@ -1,3 +1,8 @@
 [build]
-  command = "npm run build"
+  # Remove the dev-only Next.js proxy route before building.
+  # That route only exists so next dev can forward requests to the backend
+  # without CORS issues. Netlify handles proxying via the function in
+  # netlify/functions/api-proxy.ts, so the route must not exist during build
+  # (output:export forbids server-side route handlers).
+  command = "rm -rf app/api/proxy && npm run build"
   publish = "out"
