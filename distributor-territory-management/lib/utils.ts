@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { PerformanceStatus } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -41,4 +42,13 @@ export function initials(name: string) {
 export function percent(value: number, total: number) {
   if (!total) return 0;
   return Math.round((value / total) * 100);
+}
+
+export function derivePerformance(monthlySales: number, targetSales: number): PerformanceStatus {
+  if (!targetSales) return "average";
+  const ratio = monthlySales / targetSales;
+  if (ratio >= 1) return "excellent";
+  if (ratio >= 0.85) return "good";
+  if (ratio >= 0.65) return "average";
+  return "underperforming";
 }

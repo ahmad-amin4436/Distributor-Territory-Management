@@ -39,6 +39,7 @@ const schema = z.object({
   distributorId: z.string().optional(),
   monthlySales: nonNegativeNumber("amount"),
   targetSales: nonNegativeNumber("target"),
+  outlets: nonNegativeNumber("outlets"),
   population: nonNegativeNumber("population"),
   notes: z.string().optional(),
 });
@@ -89,6 +90,7 @@ export function AssignTerritoryDialog({
       distributorId: "",
       monthlySales: 0,
       targetSales: 0,
+      outlets: 0,
       population: 0,
       notes: "",
     },
@@ -103,6 +105,7 @@ export function AssignTerritoryDialog({
         distributorId: editing?.distributorId ?? "",
         monthlySales: editing?.monthlySales ?? 0,
         targetSales: editing?.targetSales ?? 0,
+        outlets: editing?.outlets ?? 0,
         population: editing?.population ?? 0,
         notes: editing?.notes ?? "",
       });
@@ -132,6 +135,7 @@ export function AssignTerritoryDialog({
           notes: values.notes,
           monthlySales: values.monthlySales,
           targetSales: values.targetSales,
+          outlets: values.outlets,
           population: values.population,
         });
         if (editing.distributorId !== nextDistributor) {
@@ -146,6 +150,7 @@ export function AssignTerritoryDialog({
           distributorId: nextDistributor,
           monthlySales: values.monthlySales,
           targetSales: values.targetSales,
+          outlets: values.outlets,
           population: values.population,
         });
         setSelected(territory.id);
@@ -228,19 +233,35 @@ export function AssignTerritoryDialog({
               )}
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="population">Population</Label>
-            <Input
-              id="population"
-              type="number"
-              min={0}
-              step={1}
-              {...register("population")}
-              placeholder="e.g. 250000"
-            />
-            {errors.population && (
-              <p className="text-xs text-rose-400">{errors.population.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="outlets">Outlets</Label>
+              <Input
+                id="outlets"
+                type="number"
+                min={0}
+                step={1}
+                {...register("outlets")}
+                placeholder="e.g. 120"
+              />
+              {errors.outlets && (
+                <p className="text-xs text-rose-400">{errors.outlets.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="population">Population</Label>
+              <Input
+                id="population"
+                type="number"
+                min={0}
+                step={1}
+                {...register("population")}
+                placeholder="e.g. 250000"
+              />
+              {errors.population && (
+                <p className="text-xs text-rose-400">{errors.population.message}</p>
+              )}
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Distributor</Label>

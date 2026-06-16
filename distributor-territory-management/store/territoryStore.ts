@@ -5,6 +5,7 @@ import type { LatLng, Territory } from "@/types";
 import type { ImportedTerritory } from "@/lib/geo";
 import { territoryApi, type TerritoryInput } from "@/lib/api";
 import { useDistributorStore } from "@/store/distributorStore";
+import { derivePerformance } from "@/lib/utils";
 
 interface DraftTerritory {
   coordinates: LatLng[];
@@ -22,11 +23,8 @@ interface TerritoryState {
   load: () => Promise<void>;
   setDraft: (draft: DraftTerritory | null) => void;
   addTerritory: (
-    input: Omit<Territory, "id" | "createdAt" | "monthlySales" | "targetSales" | "performance" | "outlets" | "population" | "color"> & {
+    input: Omit<Territory, "id" | "createdAt" | "performance" | "color"> & {
       color?: string;
-      monthlySales?: number;
-      targetSales?: number;
-      population?: number;
     },
   ) => Promise<Territory>;
   addImportedTerritories: (items: ImportedTerritory[]) => Promise<number>;
@@ -57,6 +55,11 @@ function toInput(t: Partial<Territory>): TerritoryInput {
   };
 }
 
+/** Always recompute performance from live sales/target so the stored DB value is never used. */
+function normalise(t: Territory): Territory {
+  return { ...t, performance: derivePerformance(t.monthlySales, t.targetSales) };
+}
+
 /** Recompute distributors' assignedTerritoryId from the territory list. */
 function syncDistributorAssignments(territories: Territory[]) {
   const byDistributor = new Map<string, string>();
@@ -85,7 +88,7 @@ export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
     set({ loading: true, error: null });
     try {
       const territories = await territoryApi.list();
-      set({ territories, initialized: true, loading: false });
+      set({ territories: territories.map(normalise), initialized: true, loading: false });
     } catch (e) {
       set({ loading: false, error: (e as Error).message });
     }
@@ -94,7 +97,7 @@ export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
   setDraft: (draft) => set({ draft }),
 
   addTerritory: async (input) => {
-    const created = await territoryApi.create(toInput(input as Partial<Territory>));
+    const created = normalise(await territoryApi.create(toInput(input as Partial<Territory>)));
     set((s) => ({ territories: [...s.territories, created], draft: null, selectedId: created.id }));
     if (created.distributorId) syncDistributorAssignments(get().territories);
     return created;
@@ -104,14 +107,14 @@ export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
     if (!items.length) return 0;
     let count = 0;
     for (const item of items) {
-      const created = await territoryApi.create({
+      const created = normalise(await territoryApi.create({
         name: item.name,
         coverageArea: item.coverageArea,
         notes: item.notes,
         color: item.color,
         coordinates: item.coordinates,
         distributorId: item.distributorId ?? null,
-      });
+      }));
       set((s) => ({ territories: [...s.territories, created] }));
       count++;
     }
@@ -122,13 +125,13 @@ export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
   updateTerritory: async (id, patch) => {
     const current = get().territories.find((t) => t.id === id);
     if (!current) return;
-    const updated = await territoryApi.update(id, toInput({ ...current, ...patch }));
+    const updated = normalise(await territoryApi.update(id, toInput({ ...current, ...patch })));
     set((s) => ({ territories: s.territories.map((t) => (t.id === id ? updated : t)) }));
     syncDistributorAssignments(get().territories);
   },
 
   updateCoordinates: async (id, coordinates) => {
-    const updated = await territoryApi.updateCoordinates(id, coordinates);
+    const updated = normalise(await territoryApi.updateCoordinates(id, coordinates));
     set((s) => ({ territories: s.territories.map((t) => (t.id === id ? updated : t)) }));
   },
 
@@ -144,7 +147,7 @@ export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
   setSelected: (id) => set((s) => ({ selectedId: id, focusTick: s.focusTick + 1 })),
 
   assignDistributor: async (territoryId, distributorId) => {
-    const updated = await territoryApi.assign(territoryId, distributorId ?? null);
+    const updated = normalise(await territoryApi.assign(territoryId, distributorId ?? null));
     set((s) => ({ territories: s.territories.map((t) => (t.id === territoryId ? updated : t)) }));
     syncDistributorAssignments(get().territories);
   },
@@ -152,8 +155,8 @@ export const useTerritoryStore = create<TerritoryState>()((set, get) => ({
   upsertLocal: (territory) =>
     set((s) => ({
       territories: s.territories.some((t) => t.id === territory.id)
-        ? s.territories.map((t) => (t.id === territory.id ? territory : t))
-        : [...s.territories, territory],
+        ? s.territories.map((t) => (t.id === territory.id ? normalise(territory) : t))
+        : [...s.territories, normalise(territory)],
     })),
 
   clearDistributorLocal: (distributorId) =>
