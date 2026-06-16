@@ -143,7 +143,6 @@ export interface TerritoryInput {
   distributorId?: string | null;
   monthlySales?: number;
   targetSales?: number;
-  performance?: string;
   outlets?: number;
   population?: number;
 }

@@ -49,7 +49,8 @@ function toInput(t: Partial<Territory>): TerritoryInput {
     distributorId: t.distributorId ?? null,
     monthlySales: t.monthlySales,
     targetSales: t.targetSales,
-    performance: t.performance,
+    // Omit performance — the backend recomputes it from monthlySales/targetSales
+    // so we never risk writing a stale cached value back to the database.
     outlets: t.outlets,
     population: t.population,
   };
