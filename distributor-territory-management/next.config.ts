@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Static export only during production build; dev server needs route handlers for local API proxy
-  ...(process.env.NODE_ENV === "production" ? { output: "export" } : {}),
+  // Static export only on Netlify; local next build and next dev both need
+  // route handlers to work (the dev proxy at /api/proxy/[...path]).
+  // Netlify injects NETLIFY=true automatically in its build environment.
+  ...(process.env.NETLIFY ? { output: "export" } : {}),
   reactStrictMode: true,
   images: {
     unoptimized: true,
