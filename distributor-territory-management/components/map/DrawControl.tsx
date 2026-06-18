@@ -9,17 +9,33 @@ import type { LatLng } from "@/types";
 interface Props {
   enabled: boolean;
   onShapeCreated: (latlngs: LatLng[]) => void;
+  /** Receives an imperative undo() callback while drawing, or null when idle. */
+  onUndoReady?: (undo: (() => void) | null) => void;
+  /** Notified each time the in-progress vertex count changes (0 when idle). */
+  onVertexCountChange?: (count: number) => void;
 }
 
-export function DrawControl({ enabled, onShapeCreated }: Props) {
+export function DrawControl({
+  enabled,
+  onShapeCreated,
+  onUndoReady,
+  onVertexCountChange,
+}: Props) {
   const map = useMap();
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      onUndoReady?.(null);
+      onVertexCountChange?.(0);
+      return;
+    }
 
-    let drawer: L.Draw.Polygon | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const LD = L as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let drawer: any = null;
     try {
-      drawer = new (L as any).Draw.Polygon(map, {
+      drawer = new LD.Draw.Polygon(map, {
         allowIntersection: false,
         showArea: false,
         shapeOptions: {
@@ -37,22 +53,60 @@ export function DrawControl({ enabled, onShapeCreated }: Props) {
       console.error("Failed to start polygon draw", err);
     }
 
+    const undo = () => {
+      try {
+        drawer?.deleteLastVertex?.();
+        const len: number = drawer?._markers?.length ?? 0;
+        onVertexCountChange?.(len);
+      } catch (err) {
+        console.error("undo failed", err);
+      }
+    };
+    onUndoReady?.(undo);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleVertex = (e: any) => {
+      const layers = e?.layers?.getLayers?.() ?? [];
+      onVertexCountChange?.(layers.length);
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleCreated = (e: any) => {
       const layer = e.layer as L.Polygon;
       const latlngs = layer.getLatLngs()[0] as L.LatLng[];
       onShapeCreated(latlngs.map((l) => [l.lat, l.lng] as LatLng));
       map.removeLayer(layer);
+      onVertexCountChange?.(0);
     };
 
-    map.on((L as any).Draw.Event.CREATED, handleCreated);
+    const handleKey = (ev: KeyboardEvent) => {
+      const target = ev.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || target?.isContentEditable) return;
+      if (
+        ev.key === "Backspace" ||
+        ((ev.ctrlKey || ev.metaKey) && (ev.key === "z" || ev.key === "Z"))
+      ) {
+        ev.preventDefault();
+        undo();
+      }
+    };
+
+    map.on(LD.Draw.Event.DRAWVERTEX, handleVertex);
+    map.on(LD.Draw.Event.CREATED, handleCreated);
+    window.addEventListener("keydown", handleKey);
 
     return () => {
       try {
         drawer?.disable();
       } catch {}
-      map.off((L as any).Draw.Event.CREATED, handleCreated);
+      map.off(LD.Draw.Event.DRAWVERTEX, handleVertex);
+      map.off(LD.Draw.Event.CREATED, handleCreated);
+      window.removeEventListener("keydown", handleKey);
+      onUndoReady?.(null);
+      onVertexCountChange?.(0);
     };
-  }, [enabled, map, onShapeCreated]);
+  }, [enabled, map, onShapeCreated, onUndoReady, onVertexCountChange]);
 
   return null;
 }
