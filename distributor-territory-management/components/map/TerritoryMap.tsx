@@ -19,7 +19,6 @@ import { DrawControl } from "./DrawControl";
 import { HeatLayer } from "./HeatLayer";
 import { PakistanMask } from "./PakistanMask";
 import { TerritoryPopupCard } from "./TerritoryPopupCard";
-import { DEMO_CITY } from "@/mock/distributors";
 import { useTerritoryStore } from "@/store/territoryStore";
 import { useDistributorStore } from "@/store/distributorStore";
 import { centroid, findOverlappingPairs } from "@/lib/geo";
@@ -276,8 +275,8 @@ export function TerritoryMap({
       data-point-placing={pointPlacing ? "true" : undefined}
     >
       <MapContainer
-        center={DEMO_CITY.center}
-        zoom={DEMO_CITY.zoom}
+        bounds={PAKISTAN_BOUNDS}
+        boundsOptions={{ padding: [16, 16] }}
         minZoom={PAKISTAN_MIN_ZOOM}
         maxZoom={PAKISTAN_MAX_ZOOM}
         maxBounds={PAKISTAN_BOUNDS}
