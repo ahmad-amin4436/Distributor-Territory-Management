@@ -80,6 +80,15 @@ function MapClickHandler({
   return null;
 }
 
+// Pakistan bounding box (with a small buffer). Used to clamp panning and
+// prevent zooming out to the rest of the world.
+const PAKISTAN_BOUNDS = L.latLngBounds(
+  L.latLng(23.0, 60.5),
+  L.latLng(37.5, 78.0),
+);
+const PAKISTAN_MIN_ZOOM = 5;
+const PAKISTAN_MAX_ZOOM = 18;
+
 const BASE_LAYERS: Record<
   BaseLayerId,
   { url: string; attribution: string; dark: boolean }
@@ -275,11 +284,24 @@ export function TerritoryMap({
       <MapContainer
         center={DEMO_CITY.center}
         zoom={DEMO_CITY.zoom}
+        minZoom={PAKISTAN_MIN_ZOOM}
+        maxZoom={PAKISTAN_MAX_ZOOM}
+        maxBounds={PAKISTAN_BOUNDS}
+        maxBoundsViscosity={1}
+        worldCopyJump={false}
         zoomControl
         scrollWheelZoom
         style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer key={baseLayer} attribution={layer.attribution} url={layer.url} />
+        <TileLayer
+          key={baseLayer}
+          attribution={layer.attribution}
+          url={layer.url}
+          bounds={PAKISTAN_BOUNDS}
+          noWrap
+          minZoom={PAKISTAN_MIN_ZOOM}
+          maxZoom={PAKISTAN_MAX_ZOOM}
+        />
 
         {showHeatmap && <HeatLayer points={heatPoints} settings={heatSettings} />}
         <MapClickHandler enabled={pointPlacing && !!onMapClick} onClick={(lat, lng) => onMapClick?.(lat, lng)} />

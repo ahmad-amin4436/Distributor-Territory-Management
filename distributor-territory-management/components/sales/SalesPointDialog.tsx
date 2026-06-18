@@ -100,8 +100,8 @@ export function SalesPointDialog({ open, onOpenChange, draftPosition, editing }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:w-full sm:max-w-md">
+        <DialogHeader className="flex-shrink-0 border-b border-border px-5 py-4 sm:px-6">
           <DialogTitle className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-amber-400 text-white">
               <Flame className="h-4 w-4" />
@@ -113,7 +113,11 @@ export function SalesPointDialog({ open, onOpenChange, draftPosition, editing }:
           </DialogDescription>
         </DialogHeader>
 
-        <form id="sales-point-form" onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
+        <form
+          id="sales-point-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid flex-1 gap-4 overflow-y-auto px-5 py-4 sm:grid-cols-2 sm:px-6"
+        >
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="sp-label">Label (optional)</Label>
             <Input id="sp-label" {...register("label")} placeholder="e.g. Defence Phase 5 cluster" />
@@ -160,14 +164,25 @@ export function SalesPointDialog({ open, onOpenChange, draftPosition, editing }:
           </div>
         </form>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button form="sales-point-form" type="submit" variant="gradient">
-            {editing ? "Save changes" : "Add hotspot"}
-          </Button>
-        </DialogFooter>
+        <div className="flex-shrink-0 border-t border-border bg-card/80 px-5 py-3 sm:px-6">
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              form="sales-point-form"
+              type="submit"
+              variant="gradient"
+              className="w-full sm:w-auto"
+            >
+              {editing ? "Save changes" : "Add hotspot"}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
