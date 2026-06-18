@@ -186,6 +186,9 @@ body {
   pointer-events: none !important;
   transform: translate(-50%, -50%);
 }
+[data-point-placing="true"] .leaflet-container {
+  cursor: crosshair !important;
+}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }

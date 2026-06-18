@@ -10,6 +10,7 @@ import {
   TileLayer,
   Tooltip,
   useMap,
+  useMapEvent,
 } from "react-leaflet";
 import L from "leaflet";
 import { DrawControl } from "./DrawControl";
@@ -19,7 +20,14 @@ import { DEMO_CITY } from "@/mock/distributors";
 import { useTerritoryStore } from "@/store/territoryStore";
 import { useDistributorStore } from "@/store/distributorStore";
 import { centroid, findOverlappingPairs } from "@/lib/geo";
-import type { BaseLayerId, LatLng, MapFilters, SalesPoint, Territory } from "@/types";
+import type {
+  BaseLayerId,
+  HeatmapSettings,
+  LatLng,
+  MapFilters,
+  SalesPoint,
+  Territory,
+} from "@/types";
 
 function buildLabelIcon(name: string, color: string) {
   const safeName = name.replace(/[<>]/g, "");
@@ -36,6 +44,7 @@ interface Props {
   drawing?: boolean;
   showHeatmap?: boolean;
   heatPoints?: SalesPoint[];
+  heatSettings?: HeatmapSettings;
   onDraftCreated?: (coords: LatLng[]) => void;
   onTerritoryClick?: (id: string) => void;
   focusTerritoryId?: string | null;
@@ -44,6 +53,22 @@ interface Props {
   baseLayer?: BaseLayerId;
   showLabels?: boolean;
   highlightOverlaps?: boolean;
+  pointPlacing?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
+}
+
+function MapClickHandler({
+  enabled,
+  onClick,
+}: {
+  enabled: boolean;
+  onClick: (lat: number, lng: number) => void;
+}) {
+  useMapEvent("click", (e) => {
+    if (!enabled) return;
+    onClick(e.latlng.lat, e.latlng.lng);
+  });
+  return null;
 }
 
 const BASE_LAYERS: Record<
@@ -132,6 +157,7 @@ export function TerritoryMap({
   drawing = false,
   showHeatmap = false,
   heatPoints = [],
+  heatSettings,
   onDraftCreated,
   onTerritoryClick,
   focusTerritoryId,
@@ -140,6 +166,8 @@ export function TerritoryMap({
   baseLayer = "dark",
   showLabels = true,
   highlightOverlaps = false,
+  pointPlacing = false,
+  onMapClick,
 }: Props) {
   const territories = useTerritoryStore((s) => s.territories);
   const draft = useTerritoryStore((s) => s.draft);
@@ -202,6 +230,7 @@ export function TerritoryMap({
       className="relative h-full w-full overflow-hidden rounded-xl"
       style={{ height }}
       data-base-layer={baseLayer}
+      data-point-placing={pointPlacing ? "true" : undefined}
     >
       <MapContainer
         center={DEMO_CITY.center}
@@ -212,9 +241,10 @@ export function TerritoryMap({
       >
         <TileLayer key={baseLayer} attribution={layer.attribution} url={layer.url} />
 
-        {showHeatmap && <HeatLayer points={heatPoints} />}
+        {showHeatmap && <HeatLayer points={heatPoints} settings={heatSettings} />}
+        <MapClickHandler enabled={pointPlacing && !!onMapClick} onClick={(lat, lng) => onMapClick?.(lat, lng)} />
 
-        {filteredTerritories.map((t) => {
+        {heatSettings?.showTerritories === false ? null : filteredTerritories.map((t) => {
           const distributor = t.distributorId ? distributorMap[t.distributorId] : undefined;
           const isHover = hoverId === t.id;
           const isSelected = selectedId === t.id;
@@ -263,7 +293,7 @@ export function TerritoryMap({
           );
         })}
 
-        {showLabels &&
+        {showLabels && heatSettings?.showTerritories !== false &&
           filteredTerritories.map((t) => {
             if (
               filters &&
