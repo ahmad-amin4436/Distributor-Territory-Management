@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DynamicMap } from "@/components/map/DynamicMap";
+import { MapLegend } from "@/components/map/MapLegend";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { SalesByTerritoryChart } from "@/components/dashboard/SalesByTerritoryChart";
 import { MonthlyTrendChart } from "@/components/dashboard/MonthlyTrendChart";
@@ -133,23 +134,7 @@ export default function SalesPage() {
                 pointPlacing={placing}
                 onMapClick={handleMapClick}
               />
-              <div className="pointer-events-none absolute right-4 top-4 z-[400] flex flex-col gap-2 rounded-xl border border-border bg-card/85 px-4 py-3 text-xs backdrop-blur">
-                <span className="font-semibold uppercase tracking-wider text-foreground">
-                  Activity legend
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_2px] shadow-emerald-500/40" />
-                  High sales · ≥ {settings.highThreshold}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_2px] shadow-amber-400/40" />
-                  Medium · ≥ {settings.mediumThreshold}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_2px] shadow-rose-500/40" />
-                  Low / underperforming
-                </div>
-              </div>
+              <MapLegend showHeatmap={view === "heatmap"} />
 
               {placing && (
                 <div className="pointer-events-none absolute left-1/2 top-4 z-[450] -translate-x-1/2 rounded-full border border-amber-500/30 bg-amber-500/15 px-4 py-1.5 text-xs text-amber-200 shadow-lg backdrop-blur animate-fade-in">
