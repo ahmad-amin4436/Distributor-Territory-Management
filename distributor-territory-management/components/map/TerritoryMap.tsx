@@ -89,24 +89,17 @@ const PAKISTAN_BOUNDS = L.latLngBounds(
 const PAKISTAN_MIN_ZOOM = 5;
 const PAKISTAN_MAX_ZOOM = 18;
 
-const BASE_LAYERS: Record<
-  BaseLayerId,
-  { url: string; attribution: string; dark: boolean }
-> = {
+const BASE_LAYERS: Record<BaseLayerId, { url: string; dark: boolean }> = {
   dark: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     dark: true,
   },
   streets: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     dark: false,
   },
   satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution:
-      "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP",
     dark: false,
   },
 };
@@ -291,11 +284,11 @@ export function TerritoryMap({
         worldCopyJump={false}
         zoomControl
         scrollWheelZoom
+        attributionControl={false}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           key={baseLayer}
-          attribution={layer.attribution}
           url={layer.url}
           bounds={PAKISTAN_BOUNDS}
           noWrap
