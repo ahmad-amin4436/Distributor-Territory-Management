@@ -291,6 +291,28 @@ export default function TerritoriesPage() {
 
               <MapLegend showOverlaps={highlightOverlaps} />
 
+              {fullscreen && (
+                <div className="pointer-events-auto absolute bottom-4 left-4 z-[455] flex items-center gap-2 animate-fade-in">
+                  {drawing ? (
+                    <>
+                      <Badge variant="warning" className="animate-pulse-glow">
+                        <Pentagon className="h-3 w-3" />
+                        Drawing
+                      </Badge>
+                      <Button variant="outline" onClick={cancelDrawing} className="shadow-lg">
+                        <X className="h-4 w-4" />
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="gradient" onClick={startDrawing} className="shadow-xl shadow-indigo-500/30">
+                      <Plus className="h-4 w-4" />
+                      Draw new territory
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {drawing && (
                 <div className="pointer-events-none absolute right-4 top-20 z-[450] max-w-xs space-y-2 rounded-xl border border-border bg-card/90 p-4 text-xs shadow-xl backdrop-blur animate-fade-in">
                   <div className="flex items-center gap-2 text-foreground">
