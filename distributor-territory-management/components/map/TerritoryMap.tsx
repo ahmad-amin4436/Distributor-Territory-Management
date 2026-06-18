@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CircleMarker,
   MapContainer,
   Marker,
   Polygon,
   Polyline,
   Popup,
+  Rectangle,
   TileLayer,
   Tooltip,
   useMap,
@@ -55,7 +57,13 @@ interface Props {
   highlightOverlaps?: boolean;
   pointPlacing?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
-  focusPlace?: { lat: number; lng: number; bounds?: [LatLng, LatLng]; tick: number } | null;
+  focusPlace?: {
+    lat: number;
+    lng: number;
+    bounds?: [LatLng, LatLng];
+    label?: string;
+    tick: number;
+  } | null;
 }
 
 function MapClickHandler({
@@ -114,7 +122,13 @@ function FocusController({
 function FocusPlaceController({
   target,
 }: {
-  target?: { lat: number; lng: number; bounds?: [LatLng, LatLng]; tick: number } | null;
+  target?: {
+    lat: number;
+    lng: number;
+    bounds?: [LatLng, LatLng];
+    label?: string;
+    tick: number;
+  } | null;
 }) {
   const map = useMap();
   useEffect(() => {
@@ -367,6 +381,56 @@ export function TerritoryMap({
 
         <FocusController territory={focusTerritory} focusTick={focusTick} />
         <FocusPlaceController target={focusPlace} />
+
+        {focusPlace && focusPlace.bounds && (
+          <Rectangle
+            bounds={[focusPlace.bounds[0], focusPlace.bounds[1]]}
+            pathOptions={{
+              color: "#f59e0b",
+              weight: 3,
+              dashArray: "8 6",
+              fillColor: "#f59e0b",
+              fillOpacity: 0.08,
+            }}
+          >
+            {focusPlace.label && (
+              <Tooltip direction="top" sticky offset={[0, -4]}>
+                <span className="text-xs font-semibold">{focusPlace.label}</span>
+              </Tooltip>
+            )}
+          </Rectangle>
+        )}
+
+        {focusPlace && (
+          <>
+            <CircleMarker
+              center={[focusPlace.lat, focusPlace.lng]}
+              radius={14}
+              pathOptions={{
+                color: "#f59e0b",
+                weight: 2,
+                fillColor: "#f59e0b",
+                fillOpacity: 0.25,
+              }}
+            />
+            <CircleMarker
+              center={[focusPlace.lat, focusPlace.lng]}
+              radius={5}
+              pathOptions={{
+                color: "#fbbf24",
+                weight: 2,
+                fillColor: "#fbbf24",
+                fillOpacity: 1,
+              }}
+            >
+              {focusPlace.label && !focusPlace.bounds && (
+                <Tooltip direction="top" offset={[0, -6]}>
+                  <span className="text-xs font-semibold">{focusPlace.label}</span>
+                </Tooltip>
+              )}
+            </CircleMarker>
+          </>
+        )}
         <MapResizer />
       </MapContainer>
     </div>

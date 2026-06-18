@@ -278,7 +278,7 @@ export function MapSearch({
   return (
     <div
       ref={wrapperRef}
-      className="pointer-events-auto absolute left-1/2 top-4 z-[470] w-[min(640px,calc(100%-7rem))] -translate-x-1/2"
+      className="pointer-events-auto absolute left-1/2 top-20 z-[470] w-[min(640px,calc(100%-2rem))] -translate-x-1/2"
     >
       <div className="relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

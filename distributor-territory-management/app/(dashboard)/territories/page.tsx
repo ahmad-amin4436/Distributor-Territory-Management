@@ -56,6 +56,7 @@ export default function TerritoriesPage() {
     lat: number;
     lng: number;
     bounds?: [LatLng, LatLng];
+    label?: string;
     tick: number;
   } | null>(null);
   const [toast, setToast] = useState<{
@@ -255,11 +256,25 @@ export default function TerritoriesPage() {
                       lat: target.lat,
                       lng: target.lng,
                       bounds: target.bounds,
+                      label: target.label,
                       tick: Date.now(),
                     });
+                  } else if (target.type === "territory") {
+                    setFocusPlace(null);
                   }
                 }}
               />
+
+              {focusPlace && (
+                <button
+                  type="button"
+                  onClick={() => setFocusPlace(null)}
+                  className="pointer-events-auto absolute right-4 top-20 z-[460] inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-3 py-1.5 text-xs text-amber-200 shadow-lg backdrop-blur transition-colors hover:bg-amber-500/25"
+                >
+                  <X className="h-3 w-3" />
+                  Clear {focusPlace.label ? `“${focusPlace.label}”` : "highlight"}
+                </button>
+              )}
 
               <MapToolbar
                 baseLayer={baseLayer}
