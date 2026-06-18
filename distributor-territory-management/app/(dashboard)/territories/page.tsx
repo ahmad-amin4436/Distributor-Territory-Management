@@ -8,7 +8,6 @@ import {
   Pencil,
   Pentagon,
   Plus,
-  Undo2,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,8 +46,6 @@ export default function TerritoriesPage() {
   const [pendingCoords, setPendingCoords] = useState<LatLng[] | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [drawVertexCount, setDrawVertexCount] = useState(0);
-  const drawUndoRef = useRef<(() => void) | null>(null);
 
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [baseLayer, setBaseLayer] = useState<BaseLayerId>("dark");
@@ -242,10 +239,6 @@ export default function TerritoriesPage() {
               <DynamicMap
                 drawing={drawing}
                 onDraftCreated={handleShapeCreated}
-                onDrawUndoReady={(undo) => {
-                  drawUndoRef.current = undo;
-                }}
-                onDrawVertexCountChange={setDrawVertexCount}
                 onTerritoryClick={(id) => setSelected(id)}
                 focusTerritoryId={focusFromQuery}
                 filters={filters}
@@ -321,7 +314,7 @@ export default function TerritoriesPage() {
               )}
 
               {drawing && (
-                <div className="pointer-events-auto absolute right-4 top-20 z-[450] flex w-72 max-w-xs flex-col gap-2 rounded-xl border border-border bg-card/90 p-4 text-xs shadow-xl backdrop-blur animate-fade-in">
+                <div className="pointer-events-none absolute right-4 top-20 z-[450] max-w-xs space-y-2 rounded-xl border border-border bg-card/90 p-4 text-xs shadow-xl backdrop-blur animate-fade-in">
                   <div className="flex items-center gap-2 text-foreground">
                     <Pencil className="h-3.5 w-3.5 text-indigo-400" />
                     <span className="font-semibold uppercase tracking-wider">How to draw</span>
@@ -330,22 +323,6 @@ export default function TerritoriesPage() {
                     Click on the map to drop vertices. Click the first point or double-click to finish the polygon.
                     A modal will open to assign a distributor.
                   </p>
-                  <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {drawVertexCount} {drawVertexCount === 1 ? "point" : "points"}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1.5 px-2 text-[11px]"
-                      disabled={drawVertexCount === 0}
-                      onClick={() => drawUndoRef.current?.()}
-                      title="Undo last point (Backspace / Ctrl+Z)"
-                    >
-                      <Undo2 className="h-3.5 w-3.5" />
-                      Undo point
-                    </Button>
-                  </div>
                 </div>
               )}
 
