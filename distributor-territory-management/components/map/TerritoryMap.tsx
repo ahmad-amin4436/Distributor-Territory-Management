@@ -17,6 +17,7 @@ import {
 import L from "leaflet";
 import { DrawControl } from "./DrawControl";
 import { HeatLayer } from "./HeatLayer";
+import { PakistanMask } from "./PakistanMask";
 import { TerritoryPopupCard } from "./TerritoryPopupCard";
 import { DEMO_CITY } from "@/mock/distributors";
 import { useTerritoryStore } from "@/store/territoryStore";
@@ -295,6 +296,8 @@ export function TerritoryMap({
           minZoom={PAKISTAN_MIN_ZOOM}
           maxZoom={PAKISTAN_MAX_ZOOM}
         />
+
+        <PakistanMask fill={layer.dark ? "#0b0f1a" : "#1a2030"} />
 
         {showHeatmap && <HeatLayer points={heatPoints} settings={heatSettings} />}
         <MapClickHandler enabled={pointPlacing && !!onMapClick} onClick={(lat, lng) => onMapClick?.(lat, lng)} />
