@@ -36,7 +36,9 @@ export function DrawControl({
     let drawer: any = null;
     try {
       drawer = new LD.Draw.Polygon(map, {
-        allowIntersection: false,
+        // Must be true: the country-mask polygon adds segments that Leaflet
+        // Draw otherwise treats as intersections, silently rejecting clicks.
+        allowIntersection: true,
         showArea: false,
         shapeOptions: {
           color: "#6366f1",
