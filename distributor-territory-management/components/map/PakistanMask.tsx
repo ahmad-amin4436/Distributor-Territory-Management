@@ -24,9 +24,10 @@ const HOLES: LatLngExpression[][] = PAKISTAN_POLYGON.map((poly) =>
 
 const MASK_RINGS: LatLngExpression[][] = [WORLD_RING, ...HOLES];
 
-// The visible outline of Pakistan (one polyline per disjoint piece).
-const OUTLINE_RINGS: LatLngExpression[][] = PAKISTAN_POLYGON.map(
-  (poly) => poly[0] as LatLngExpression[],
+// The visible outline of Pakistan — draw every ring of every polygon piece so
+// outer shores AND inner enclaves both get a border line.
+const OUTLINE_RINGS: LatLngExpression[][] = PAKISTAN_POLYGON.flatMap(
+  (poly) => poly.map((ring) => ring as LatLngExpression[]),
 );
 
 interface Props {
