@@ -23,6 +23,14 @@ export function polygonAreaKm2(coords: LatLng[]): number {
   return polygonAreaSqMeters(coords) / 1_000_000;
 }
 
+/**
+ * Total area of Pakistan (including Pakistan-administered Kashmir +
+ * Gilgit-Baltistan + claimed Jammu & Kashmir region), in km².
+ * Pre-computed from the polygon in `lib/pakistanBoundary.ts` so we don't pay
+ * the ~1.4k vertex spherical-excess cost on every render.
+ */
+export const PAKISTAN_TOTAL_AREA_KM2 = 923_384;
+
 export function centroid(coords: LatLng[]): LatLng {
   if (!coords.length) return [0, 0];
   let lat = 0;

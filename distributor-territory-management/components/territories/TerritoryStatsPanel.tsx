@@ -3,19 +3,23 @@
 import { useMemo } from "react";
 import {
   AlertTriangle,
-  Building2,
   Compass,
+  Flag,
+  Globe2,
   Map as MapIcon,
   Ruler,
   Sparkles,
-  TrendingUp,
   Wallet,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTerritoryStore } from "@/store/territoryStore";
 import { useDistributorStore } from "@/store/distributorStore";
-import { findOverlappingPairs, polygonAreaKm2 } from "@/lib/geo";
+import {
+  findOverlappingPairs,
+  PAKISTAN_TOTAL_AREA_KM2,
+  polygonAreaKm2,
+} from "@/lib/geo";
 import { formatCompact, formatCurrency, formatNumber } from "@/lib/utils";
 
 const performanceColor: Record<string, string> = {
@@ -30,7 +34,16 @@ export function TerritoryStatsPanel() {
   const distributors = useDistributorStore((s) => s.distributors);
 
   const stats = useMemo(() => {
-    const totalArea = territories.reduce((acc, t) => acc + polygonAreaKm2(t.coordinates), 0);
+    const coveredArea = territories.reduce(
+      (acc, t) => acc + polygonAreaKm2(t.coordinates),
+      0,
+    );
+    const totalCountryArea = PAKISTAN_TOTAL_AREA_KM2;
+    const remainingArea = Math.max(0, totalCountryArea - coveredArea);
+    const coveragePct = totalCountryArea
+      ? Math.min(100, (coveredArea / totalCountryArea) * 100)
+      : 0;
+
     const totalSales = territories.reduce((acc, t) => acc + t.monthlySales, 0);
     const totalTarget = territories.reduce((acc, t) => acc + t.targetSales, 0);
     const totalOutlets = territories.reduce((acc, t) => acc + t.outlets, 0);
@@ -41,11 +54,14 @@ export function TerritoryStatsPanel() {
       {},
     );
     const overlaps = findOverlappingPairs(territories);
-    const avgArea = territories.length ? totalArea / territories.length : 0;
+    const avgArea = territories.length ? coveredArea / territories.length : 0;
     const attainment = totalTarget ? Math.round((totalSales / totalTarget) * 100) : 0;
     const activeDistributors = distributors.filter((d) => d.status === "active").length;
     return {
-      totalArea,
+      coveredArea,
+      totalCountryArea,
+      remainingArea,
+      coveragePct,
       totalSales,
       totalTarget,
       totalOutlets,
@@ -61,31 +77,31 @@ export function TerritoryStatsPanel() {
 
   const tiles = [
     {
-      label: "Total coverage",
+      label: "Total coverage area",
       icon: Ruler,
-      value: `${formatNumber(Math.round(stats.totalArea))} km²`,
+      value: `${formatNumber(Math.round(stats.coveredArea))} km²`,
       hint: `Avg ${stats.avgArea.toFixed(1)} km² per territory`,
       accent: "#6366f1",
+    },
+    {
+      label: "Pakistan total",
+      icon: Globe2,
+      value: `${formatNumber(stats.totalCountryArea)} km²`,
+      hint: "Includes AJK, Gilgit-Baltistan & J&K",
+      accent: "#22c55e",
+    },
+    {
+      label: "Remaining area",
+      icon: Flag,
+      value: `${formatNumber(Math.round(stats.remainingArea))} km²`,
+      hint: `${(100 - stats.coveragePct).toFixed(1)}% of Pakistan uncovered`,
+      accent: "#f59e0b",
     },
     {
       label: "Monthly revenue",
       icon: Wallet,
       value: formatCurrency(stats.totalSales),
-      hint: `Target ${formatCompact(stats.totalTarget)}`,
-      accent: "#22c55e",
-    },
-    {
-      label: "Target attainment",
-      icon: TrendingUp,
-      value: `${stats.attainment}%`,
-      hint: stats.attainment >= 100 ? "Ahead of plan" : "Tracking against goals",
-      accent: "#06b6d4",
-    },
-    {
-      label: "Outlets covered",
-      icon: Building2,
-      value: formatNumber(stats.totalOutlets),
-      hint: `${stats.assigned} assigned · ${stats.unassigned} unassigned`,
+      hint: `Target ${formatCompact(stats.totalTarget)} · ${stats.attainment}% attained`,
       accent: "#a855f7",
     },
   ];
@@ -124,6 +140,37 @@ export function TerritoryStatsPanel() {
               <div className="text-[11px] text-muted-foreground">{hint}</div>
             </div>
           ))}
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
+            <span>Pakistan coverage</span>
+            <span className="font-semibold text-foreground">
+              {stats.coveragePct.toFixed(2)}%
+            </span>
+          </div>
+          <div className="flex h-2 overflow-hidden rounded-full bg-secondary/60">
+            <span
+              className="block bg-gradient-to-r from-indigo-500 to-teal-400"
+              style={{ width: `${stats.coveragePct}%` }}
+            />
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-teal-400" />
+              <span className="text-muted-foreground">Covered</span>
+              <span className="ml-auto font-semibold">
+                {formatNumber(Math.round(stats.coveredArea))} km²
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-secondary/60 ring-1 ring-border" />
+              <span className="text-muted-foreground">Remaining</span>
+              <span className="ml-auto font-semibold">
+                {formatNumber(Math.round(stats.remainingArea))} km²
+              </span>
+            </div>
+          </div>
         </div>
 
         <div>
