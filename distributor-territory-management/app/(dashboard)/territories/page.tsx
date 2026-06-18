@@ -17,6 +17,7 @@ import { DynamicMap } from "@/components/map/DynamicMap";
 import { MapToolbar } from "@/components/map/MapToolbar";
 import { MapLegend } from "@/components/map/MapLegend";
 import { MapFilterBar } from "@/components/map/MapFilterBar";
+import { MapSearch } from "@/components/map/MapSearch";
 import { TerritorySidebar } from "@/components/territories/TerritorySidebar";
 import { AssignTerritoryDialog } from "@/components/territories/AssignTerritoryDialog";
 import { TerritoryStatsPanel } from "@/components/territories/TerritoryStatsPanel";
@@ -51,6 +52,12 @@ export default function TerritoriesPage() {
   const [showLabels, setShowLabels] = useState(true);
   const [highlightOverlaps, setHighlightOverlaps] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [focusPlace, setFocusPlace] = useState<{
+    lat: number;
+    lng: number;
+    bounds?: [LatLng, LatLng];
+    tick: number;
+  } | null>(null);
   const [toast, setToast] = useState<{
     tone: "success" | "danger" | "info";
     text: string;
@@ -237,6 +244,21 @@ export default function TerritoriesPage() {
                 baseLayer={baseLayer}
                 showLabels={showLabels}
                 highlightOverlaps={highlightOverlaps}
+                focusPlace={focusPlace}
+              />
+
+              <MapSearch
+                countryCode="pk"
+                onPick={(target) => {
+                  if (target.type === "place") {
+                    setFocusPlace({
+                      lat: target.lat,
+                      lng: target.lng,
+                      bounds: target.bounds,
+                      tick: Date.now(),
+                    });
+                  }
+                }}
               />
 
               <MapToolbar

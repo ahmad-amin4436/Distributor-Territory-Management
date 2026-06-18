@@ -55,6 +55,7 @@ interface Props {
   highlightOverlaps?: boolean;
   pointPlacing?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
+  focusPlace?: { lat: number; lng: number; bounds?: [LatLng, LatLng]; tick: number } | null;
 }
 
 function MapClickHandler({
@@ -107,6 +108,30 @@ function FocusController({
     if (bounds.isValid()) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.6 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [territory?.id, focusTick, map]);
+  return null;
+}
+
+function FocusPlaceController({
+  target,
+}: {
+  target?: { lat: number; lng: number; bounds?: [LatLng, LatLng]; tick: number } | null;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!target) return;
+    if (target.bounds) {
+      const b = L.latLngBounds(
+        L.latLng(target.bounds[0][0], target.bounds[0][1]),
+        L.latLng(target.bounds[1][0], target.bounds[1][1]),
+      );
+      if (b.isValid()) {
+        map.flyToBounds(b, { padding: [60, 60], duration: 0.6 });
+        return;
+      }
+    }
+    map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 14), { duration: 0.6 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target?.tick, map]);
   return null;
 }
 
@@ -168,6 +193,7 @@ export function TerritoryMap({
   highlightOverlaps = false,
   pointPlacing = false,
   onMapClick,
+  focusPlace,
 }: Props) {
   const territories = useTerritoryStore((s) => s.territories);
   const draft = useTerritoryStore((s) => s.draft);
@@ -340,6 +366,7 @@ export function TerritoryMap({
         )}
 
         <FocusController territory={focusTerritory} focusTick={focusTick} />
+        <FocusPlaceController target={focusPlace} />
         <MapResizer />
       </MapContainer>
     </div>
