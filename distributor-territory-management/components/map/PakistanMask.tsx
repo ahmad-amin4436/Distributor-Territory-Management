@@ -49,7 +49,6 @@ export function PakistanMask({ fill = "#0b0f1a", stroke = "rgba(99,102,241,0.55)
           fillColor: fill,
           fillOpacity: 1,
           fillRule: "evenodd",
-          className: "pk-mask-fill",
         }}
       />
       {OUTLINE_RINGS.map((ring, i) => (
@@ -61,7 +60,6 @@ export function PakistanMask({ fill = "#0b0f1a", stroke = "rgba(99,102,241,0.55)
             color: stroke,
             weight: 1.2,
             opacity: 0.9,
-            className: "pk-mask-outline",
           }}
         />
       ))}

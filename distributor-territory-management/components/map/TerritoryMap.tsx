@@ -49,8 +49,6 @@ interface Props {
   heatPoints?: SalesPoint[];
   heatSettings?: HeatmapSettings;
   onDraftCreated?: (coords: LatLng[]) => void;
-  onDrawUndoReady?: (undo: (() => void) | null) => void;
-  onDrawVertexCountChange?: (count: number) => void;
   onTerritoryClick?: (id: string) => void;
   focusTerritoryId?: string | null;
   height?: string;
@@ -203,8 +201,6 @@ export function TerritoryMap({
   heatPoints = [],
   heatSettings,
   onDraftCreated,
-  onDrawUndoReady,
-  onDrawVertexCountChange,
   onTerritoryClick,
   focusTerritoryId,
   height = "100%",
@@ -398,12 +394,7 @@ export function TerritoryMap({
         )}
 
         {drawing && onDraftCreated && (
-          <DrawControl
-            enabled={drawing}
-            onShapeCreated={onDraftCreated}
-            onUndoReady={onDrawUndoReady}
-            onVertexCountChange={onDrawVertexCountChange}
-          />
+          <DrawControl enabled={drawing} onShapeCreated={onDraftCreated} />
         )}
 
         <FocusController territory={focusTerritory} focusTick={focusTick} />
