@@ -349,14 +349,15 @@ export default function TerritoriesPage() {
                 <div className="pointer-events-none absolute right-4 top-20 z-[450] max-w-xs space-y-2 rounded-xl border border-border bg-card/90 p-4 text-xs shadow-xl backdrop-blur animate-fade-in">
                   <div className="flex items-center gap-2 text-foreground">
                     <Pencil className="h-3.5 w-3.5 text-indigo-400" />
-                    <span className="font-semibold uppercase tracking-wider">
-                      {reshapeId ? "Redraw boundary" : "How to draw"}
-                    </span>
+                    <span className="font-semibold uppercase tracking-wider">How to draw</span>
                   </div>
                   <p className="text-muted-foreground">
-                    {reshapeId
-                      ? `Click to drop new vertices for ${territories.find((t) => t.id === reshapeId)?.name ?? "this territory"}. Double-click or click the first point to finish. The old polygon will be replaced.`
-                      : "Click on the map to drop vertices. Click the first point or double-click to finish the polygon. A modal will open to assign a distributor."}
+                    Click the map to place vertices. Click the first point or double-click to close the polygon.
+                  </p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Backspace</span> or{" "}
+                    <span className="font-medium text-foreground">Ctrl+Z</span> — remove the last point.{" "}
+                    Click any placed point to remove it individually.
                   </p>
                 </div>
               )}
