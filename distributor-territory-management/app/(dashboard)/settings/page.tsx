@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/authStore";
-import { authApi } from "@/lib/api";
+import { authApi, ApiError } from "@/lib/api";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -62,6 +62,17 @@ export default function SettingsPage() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !newPassword) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      setAddStatus({ type: "error", message: "Enter a valid email address." });
+      return;
+    }
+    if (newPassword.length < 4) {
+      setAddStatus({ type: "error", message: "Password must be at least 4 characters." });
+      return;
+    }
+
     setAddingUser(true);
     setAddStatus(null);
     try {
@@ -72,10 +83,14 @@ export default function SettingsPage() {
       setNewPassword("");
       setNewRole("user");
     } catch (err) {
-      setAddStatus({
-        type: "error",
-        message: (err as Error).message || "Failed to add user.",
-      });
+      if (err instanceof ApiError && err.status === 409) {
+        setAddStatus({ type: "error", message: `${newEmail} is already registered.` });
+      } else {
+        setAddStatus({
+          type: "error",
+          message: (err as Error).message || "Failed to add user.",
+        });
+      }
     } finally {
       setAddingUser(false);
     }
