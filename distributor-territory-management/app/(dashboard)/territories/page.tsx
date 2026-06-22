@@ -40,11 +40,13 @@ export default function TerritoriesPage() {
   const setSelected = useTerritoryStore((s) => s.setSelected);
   const setDraft = useTerritoryStore((s) => s.setDraft);
   const addImportedTerritories = useTerritoryStore((s) => s.addImportedTerritories);
+  const updateCoordinates = useTerritoryStore((s) => s.updateCoordinates);
 
   const [drawing, setDrawing] = useState(false);
   const [pendingCoords, setPendingCoords] = useState<LatLng[] | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [reshapeId, setReshapeId] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
   const [baseLayer, setBaseLayer] = useState<BaseLayerId>("dark");
@@ -109,11 +111,24 @@ export default function TerritoriesPage() {
     setDrawing(false);
     setDraft(null);
     setPendingCoords(null);
+    setReshapeId(null);
   };
 
-  const handleShapeCreated = (coords: LatLng[]) => {
+  const handleShapeCreated = async (coords: LatLng[]) => {
     if (coords.length < 3) {
       cancelDrawing();
+      return;
+    }
+    if (reshapeId) {
+      setDrawing(false);
+      setDraft(null);
+      try {
+        await updateCoordinates(reshapeId, coords);
+        setToast({ tone: "success", text: "Territory boundary updated." });
+      } catch (err) {
+        setToast({ tone: "danger", text: (err as Error).message || "Failed to update boundary." });
+      }
+      setReshapeId(null);
       return;
     }
     setPendingCoords(coords);
@@ -131,6 +146,11 @@ export default function TerritoriesPage() {
   const handleEdit = (id: string) => {
     setEditingId(id);
     setDialogOpen(true);
+  };
+
+  const handleRedraw = (id: string) => {
+    setReshapeId(id);
+    startDrawing();
   };
 
   const handleExport = () => {
@@ -182,7 +202,9 @@ export default function TerritoriesPage() {
             <>
               <Badge variant="warning" className="animate-pulse-glow">
                 <Pentagon className="h-3 w-3" />
-                Drawing mode
+                {reshapeId
+                  ? `Redrawing: ${territories.find((t) => t.id === reshapeId)?.name ?? "territory"}`
+                  : "Drawing mode"}
               </Badge>
               <Button variant="outline" onClick={cancelDrawing}>
                 <X className="h-4 w-4" />
@@ -258,11 +280,14 @@ export default function TerritoriesPage() {
                 <div className="pointer-events-none absolute right-4 top-20 z-[450] max-w-xs space-y-2 rounded-xl border border-border bg-card/90 p-4 text-xs shadow-xl backdrop-blur animate-fade-in">
                   <div className="flex items-center gap-2 text-foreground">
                     <Pencil className="h-3.5 w-3.5 text-indigo-400" />
-                    <span className="font-semibold uppercase tracking-wider">How to draw</span>
+                    <span className="font-semibold uppercase tracking-wider">
+                      {reshapeId ? "Redraw boundary" : "How to draw"}
+                    </span>
                   </div>
                   <p className="text-muted-foreground">
-                    Click on the map to drop vertices. Click the first point or double-click to finish the polygon.
-                    A modal will open to assign a distributor.
+                    {reshapeId
+                      ? `Click to drop new vertices for ${territories.find((t) => t.id === reshapeId)?.name ?? "this territory"}. Double-click or click the first point to finish. The old polygon will be replaced.`
+                      : "Click on the map to drop vertices. Click the first point or double-click to finish the polygon. A modal will open to assign a distributor."}
                   </p>
                 </div>
               )}
@@ -300,7 +325,7 @@ export default function TerritoriesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TerritorySidebar onEdit={handleEdit} filters={filters} />
+                <TerritorySidebar onEdit={handleEdit} onRedraw={handleRedraw} filters={filters} />
               </CardContent>
             </Card>
 

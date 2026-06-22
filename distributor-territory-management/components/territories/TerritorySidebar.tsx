@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { MapPin, Pencil, Ruler, Trash2 } from "lucide-react";
+import { MapPin, PenLine, Pencil, Ruler, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTerritoryStore } from "@/store/territoryStore";
@@ -19,10 +19,11 @@ const variantMap: Record<string, "success" | "info" | "warning" | "danger"> = {
 
 interface Props {
   onEdit: (id: string) => void;
+  onRedraw: (id: string) => void;
   filters?: MapFilters;
 }
 
-export function TerritorySidebar({ onEdit, filters }: Props) {
+export function TerritorySidebar({ onEdit, onRedraw, filters }: Props) {
   const territories = useTerritoryStore((s) => s.territories);
   const selectedId = useTerritoryStore((s) => s.selectedId);
   const setSelected = useTerritoryStore((s) => s.setSelected);
@@ -122,10 +123,22 @@ export function TerritorySidebar({ onEdit, filters }: Props) {
               <Button
                 size="sm"
                 variant="ghost"
+                className="h-7 px-2 text-xs text-indigo-400 hover:text-indigo-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelected(t.id);
+                  onRedraw(t.id);
+                }}
+              >
+                <PenLine className="h-3 w-3" />
+                Redraw
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 className="h-7 px-2 text-xs text-rose-400 hover:text-rose-300"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Deleting clears the distributor link server-side and in-store.
                   removeTerritory(t.id);
                 }}
               >
