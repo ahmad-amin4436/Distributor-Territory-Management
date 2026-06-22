@@ -122,21 +122,9 @@ export default function TerritoriesPage() {
     setReshapeId(null);
   };
 
-  const handleShapeCreated = async (coords: LatLng[]) => {
+  const handleShapeCreated = (coords: LatLng[]) => {
     if (coords.length < 3) {
       cancelDrawing();
-      return;
-    }
-    if (reshapeId) {
-      setDrawing(false);
-      setDraft(null);
-      try {
-        await updateCoordinates(reshapeId, coords);
-        setToast({ tone: "success", text: "Territory boundary updated." });
-      } catch (err) {
-        setToast({ tone: "danger", text: (err as Error).message || "Failed to update boundary." });
-      }
-      setReshapeId(null);
       return;
     }
     setPendingCoords(coords);
@@ -156,10 +144,20 @@ export default function TerritoriesPage() {
     setDialogOpen(true);
   };
 
-  const handleRedraw = (id: string) => {
-    setReshapeId(id);
-    startDrawing();
+  // Enter vertex-edit mode for an existing territory (drag handles on vertices).
+  const handleRedraw = (id: string) => setReshapeId(id);
+
+  const handlePolygonSaved = async (id: string, coords: LatLng[]) => {
+    try {
+      await updateCoordinates(id, coords);
+      setToast({ tone: "success", text: "Territory boundary updated." });
+    } catch (err) {
+      setToast({ tone: "danger", text: (err as Error).message || "Failed to update boundary." });
+    }
+    setReshapeId(null);
   };
+
+  const handlePolygonCancelled = () => setReshapeId(null);
 
   const handleExport = () => {
     if (territories.length === 0) {
@@ -206,13 +204,22 @@ export default function TerritoriesPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {drawing ? (
+          {reshapeId ? (
+            <>
+              <Badge variant="info" className="animate-pulse-glow">
+                <Pencil className="h-3 w-3" />
+                Editing shape: {territories.find((t) => t.id === reshapeId)?.name ?? "territory"}
+              </Badge>
+              <Button variant="outline" onClick={handlePolygonCancelled}>
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+            </>
+          ) : drawing ? (
             <>
               <Badge variant="warning" className="animate-pulse-glow">
                 <Pentagon className="h-3 w-3" />
-                {reshapeId
-                  ? `Redrawing: ${territories.find((t) => t.id === reshapeId)?.name ?? "territory"}`
-                  : "Drawing mode"}
+                Drawing mode
               </Badge>
               <Button variant="outline" onClick={cancelDrawing}>
                 <X className="h-4 w-4" />
@@ -268,6 +275,9 @@ export default function TerritoriesPage() {
                 showLabels={showLabels}
                 highlightOverlaps={highlightOverlaps}
                 focusPlace={focusPlace}
+                editingPolygonId={reshapeId}
+                onPolygonSaved={handlePolygonSaved}
+                onPolygonCancelled={handlePolygonCancelled}
               />
 
               <MapSearch

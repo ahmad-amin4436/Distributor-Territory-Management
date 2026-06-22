@@ -131,7 +131,7 @@ export function TerritorySidebar({ onEdit, onRedraw, filters }: Props) {
                 }}
               >
                 <PenLine className="h-3 w-3" />
-                Redraw
+                Edit shape
               </Button>
               <Button
                 size="sm"

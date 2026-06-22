@@ -15,10 +15,13 @@ import {
   useMapEvent,
 } from "react-leaflet";
 import L from "leaflet";
+import { Check, X } from "lucide-react";
 import { DrawControl } from "./DrawControl";
+import { EditPolygonControl, type EditPolygonHandle } from "./EditPolygonControl";
 import { HeatLayer } from "./HeatLayer";
 import { PakistanMask } from "./PakistanMask";
 import { TerritoryPopupCard } from "./TerritoryPopupCard";
+import { Button } from "@/components/ui/button";
 import { useTerritoryStore } from "@/store/territoryStore";
 import { useDistributorStore } from "@/store/distributorStore";
 import { centroid, findOverlappingPairs } from "@/lib/geo";
@@ -57,6 +60,9 @@ interface Props {
   highlightOverlaps?: boolean;
   pointPlacing?: boolean;
   onMapClick?: (lat: number, lng: number) => void;
+  editingPolygonId?: string | null;
+  onPolygonSaved?: (id: string, coords: LatLng[]) => void;
+  onPolygonCancelled?: () => void;
   focusPlace?: {
     lat: number;
     lng: number;
@@ -209,6 +215,9 @@ export function TerritoryMap({
   highlightOverlaps = false,
   pointPlacing = false,
   onMapClick,
+  editingPolygonId,
+  onPolygonSaved,
+  onPolygonCancelled,
   focusPlace,
 }: Props) {
   const territories = useTerritoryStore((s) => s.territories);
@@ -219,6 +228,11 @@ export function TerritoryMap({
   const distributors = useDistributorStore((s) => s.distributors);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const editPolyRef = useRef<EditPolygonHandle | null>(null);
+
+  const editingTerritory = editingPolygonId
+    ? territories.find((t) => t.id === editingPolygonId)
+    : undefined;
 
   const distributorMap = useMemo(
     () => Object.fromEntries(distributors.map((d) => [d.id, d])),
@@ -311,6 +325,8 @@ export function TerritoryMap({
             visibleIds.size > 0 &&
             visibleIds.size < territories.length &&
             !visibleIds.has(t.id);
+          // Skip the polygon being edited — EditPolygonControl renders it instead
+          if (t.id === editingPolygonId) return null;
           if (dimmed) return null;
           return (
             <Polygon
@@ -396,6 +412,10 @@ export function TerritoryMap({
           <DrawControl enabled={drawing} onShapeCreated={onDraftCreated} />
         )}
 
+        {editingTerritory && (
+          <EditPolygonControl ref={editPolyRef} territory={editingTerritory} />
+        )}
+
         <FocusController territory={focusTerritory} focusTick={focusTick} />
         <FocusPlaceController target={focusPlace} />
 
@@ -450,6 +470,35 @@ export function TerritoryMap({
         )}
         <MapResizer />
       </MapContainer>
+
+      {editingTerritory && (
+        <div className="pointer-events-auto absolute bottom-4 left-1/2 z-[450] flex -translate-x-1/2 items-center gap-2 rounded-xl border border-border bg-card/90 px-4 py-2.5 shadow-xl backdrop-blur animate-fade-in">
+          <span className="mr-1 text-xs text-muted-foreground">
+            Drag vertices to reshape <span className="font-semibold text-foreground">{editingTerritory.name}</span>
+          </span>
+          <Button
+            size="sm"
+            variant="gradient"
+            className="h-7 gap-1.5 px-3 text-xs"
+            onClick={() => {
+              const coords = editPolyRef.current?.getCoords() ?? [];
+              if (coords.length >= 3) onPolygonSaved?.(editingPolygonId!, coords);
+            }}
+          >
+            <Check className="h-3.5 w-3.5" />
+            Save shape
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 px-3 text-xs"
+            onClick={onPolygonCancelled}
+          >
+            <X className="h-3.5 w-3.5" />
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
