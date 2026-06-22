@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bell,
   Building2,
-  Database,
+  Eye,
+  EyeOff,
   Key,
   LogOut,
-  Mail,
-  RefreshCcw,
   Save,
   Shield,
   User2,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuthStore } from "@/store/authStore";
+import { authApi } from "@/lib/api";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -29,12 +37,17 @@ export default function SettingsPage() {
 
   const [saved, setSaved] = useState(false);
 
-  const resetDemoData = () => {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem("dtm.territories");
-    window.localStorage.removeItem("dtm.distributors");
-    window.location.reload();
-  };
+  // --- Add user form state ---
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState("user");
+  const [showPassword, setShowPassword] = useState(false);
+  const [addStatus, setAddStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [addingUser, setAddingUser] = useState(false);
 
   const handleSave = () => {
     setSaved(true);
@@ -44,6 +57,28 @@ export default function SettingsPage() {
   const handleSignOut = () => {
     signOut();
     router.replace("/login");
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail || !newPassword) return;
+    setAddingUser(true);
+    setAddStatus(null);
+    try {
+      await authApi.register(newEmail, newPassword, newName || undefined);
+      setAddStatus({ type: "success", message: `User ${newEmail} added successfully.` });
+      setNewName("");
+      setNewEmail("");
+      setNewPassword("");
+      setNewRole("user");
+    } catch (err) {
+      setAddStatus({
+        type: "error",
+        message: (err as Error).message || "Failed to add user.",
+      });
+    } finally {
+      setAddingUser(false);
+    }
   };
 
   return (
@@ -56,6 +91,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Profile */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -75,7 +111,7 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Input id="role" defaultValue={user?.role ?? "Territory Admin"} />
+                <Input id="role" defaultValue={user?.role ?? "Territory Admin"} readOnly />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="region">Region</Label>
@@ -98,6 +134,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Workspace */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -120,61 +157,136 @@ export default function SettingsPage() {
                 <Input id="currency" defaultValue="PKR" />
               </div>
             </div>
-            <Separator />
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">Email alerts</div>
-                  <div className="text-xs text-muted-foreground">
-                    Get notified when a distributor falls below target.
-                  </div>
-                </div>
-                <Badge variant="success" className="flex items-center gap-1">
-                  <Bell className="h-3 w-3" />
-                  Enabled
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">Weekly digest</div>
-                  <div className="text-xs text-muted-foreground">
-                    Summary report delivered every Monday.
-                  </div>
-                </div>
-                <Badge variant="info" className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  Active
-                </Badge>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* User Management */}
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-amber-400" />
-              Demo data
+              <Users className="h-4 w-4 text-indigo-400" />
+              User management
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              The demo persists territories and distributors locally in this browser. Reset to restore the original seed.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={resetDemoData}>
-                <RefreshCcw className="h-4 w-4" />
-                Reset demo data
-              </Button>
-              <Badge variant="muted">
-                <Database className="h-3 w-3" />
-                LocalStorage backend
-              </Badge>
+          <CardContent>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Current session */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Signed-in user
+                </p>
+                <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-teal-400 text-sm font-bold text-white">
+                      {user?.name?.charAt(0)?.toUpperCase() ?? "?"}
+                    </span>
+                    <div>
+                      <div className="text-sm font-semibold">{user?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">{user?.email ?? "—"}</div>
+                    </div>
+                    <Badge variant="info" className="ml-auto capitalize">
+                      {user?.role ?? "user"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Add user form */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Add new user
+                </p>
+                <form onSubmit={handleAddUser} className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new-name">Full name</Label>
+                      <Input
+                        id="new-name"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="Jane Doe"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new-role">Role</Label>
+                      <Select value={newRole} onValueChange={setNewRole}>
+                        <SelectTrigger id="new-role">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-email">Email</Label>
+                    <Input
+                      id="new-email"
+                      type="email"
+                      required
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="jane@company.com"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Min 8 characters"
+                        className="pr-9"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowPassword((v) => !v)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {addStatus && (
+                    <p
+                      className={`text-xs rounded-md px-3 py-2 border ${
+                        addStatus.type === "success"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                          : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                      }`}
+                    >
+                      {addStatus.message}
+                    </p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    variant="gradient"
+                    disabled={addingUser}
+                    className="w-full"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    {addingUser ? "Adding user…" : "Add user"}
+                  </Button>
+                </form>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Security */}
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-rose-400" />
