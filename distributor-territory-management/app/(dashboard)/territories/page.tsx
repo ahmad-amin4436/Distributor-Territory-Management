@@ -17,6 +17,7 @@ import { DynamicMap } from "@/components/map/DynamicMap";
 import { MapToolbar } from "@/components/map/MapToolbar";
 import { MapLegend } from "@/components/map/MapLegend";
 import { MapFilterBar } from "@/components/map/MapFilterBar";
+import { MapSearch } from "@/components/map/MapSearch";
 import { TerritorySidebar } from "@/components/territories/TerritorySidebar";
 import { AssignTerritoryDialog } from "@/components/territories/AssignTerritoryDialog";
 import { TerritoryStatsPanel } from "@/components/territories/TerritoryStatsPanel";
@@ -53,6 +54,13 @@ export default function TerritoriesPage() {
   const [showLabels, setShowLabels] = useState(true);
   const [highlightOverlaps, setHighlightOverlaps] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [focusPlace, setFocusPlace] = useState<{
+    lat: number;
+    lng: number;
+    bounds?: [LatLng, LatLng];
+    label?: string;
+    tick: number;
+  } | null>(null);
   const [toast, setToast] = useState<{
     tone: "success" | "danger" | "info";
     text: string;
@@ -259,7 +267,36 @@ export default function TerritoriesPage() {
                 baseLayer={baseLayer}
                 showLabels={showLabels}
                 highlightOverlaps={highlightOverlaps}
+                focusPlace={focusPlace}
               />
+
+              <MapSearch
+                countryCode="pk"
+                onPick={(target) => {
+                  if (target.type === "place") {
+                    setFocusPlace({
+                      lat: target.lat,
+                      lng: target.lng,
+                      bounds: target.bounds,
+                      label: target.label,
+                      tick: Date.now(),
+                    });
+                  } else if (target.type === "territory") {
+                    setFocusPlace(null);
+                  }
+                }}
+              />
+
+              {focusPlace && (
+                <button
+                  type="button"
+                  onClick={() => setFocusPlace(null)}
+                  className="pointer-events-auto absolute right-4 top-20 z-[460] inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-3 py-1.5 text-xs text-amber-200 shadow-lg backdrop-blur transition-colors hover:bg-amber-500/25"
+                >
+                  <X className="h-3 w-3" />
+                  Clear {focusPlace.label ? `“${focusPlace.label}”` : "highlight"}
+                </button>
+              )}
 
               <MapToolbar
                 baseLayer={baseLayer}
@@ -275,6 +312,28 @@ export default function TerritoriesPage() {
               />
 
               <MapLegend showOverlaps={highlightOverlaps} />
+
+              {fullscreen && (
+                <div className="pointer-events-auto absolute bottom-4 left-4 z-[455] flex items-center gap-2 animate-fade-in">
+                  {drawing ? (
+                    <>
+                      <Badge variant="warning" className="animate-pulse-glow">
+                        <Pentagon className="h-3 w-3" />
+                        Drawing
+                      </Badge>
+                      <Button variant="outline" onClick={cancelDrawing} className="shadow-lg">
+                        <X className="h-4 w-4" />
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="gradient" onClick={startDrawing} className="shadow-xl shadow-indigo-500/30">
+                      <Plus className="h-4 w-4" />
+                      Draw new territory
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {drawing && (
                 <div className="pointer-events-none absolute right-4 top-20 z-[450] max-w-xs space-y-2 rounded-xl border border-border bg-card/90 p-4 text-xs shadow-xl backdrop-blur animate-fade-in">

@@ -2,24 +2,34 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CircleMarker,
   MapContainer,
   Marker,
   Polygon,
   Polyline,
   Popup,
+  Rectangle,
   TileLayer,
   Tooltip,
   useMap,
+  useMapEvent,
 } from "react-leaflet";
 import L from "leaflet";
 import { DrawControl } from "./DrawControl";
 import { HeatLayer } from "./HeatLayer";
+import { PakistanMask } from "./PakistanMask";
 import { TerritoryPopupCard } from "./TerritoryPopupCard";
-import { DEMO_CITY } from "@/mock/distributors";
 import { useTerritoryStore } from "@/store/territoryStore";
 import { useDistributorStore } from "@/store/distributorStore";
 import { centroid, findOverlappingPairs } from "@/lib/geo";
-import type { BaseLayerId, LatLng, MapFilters, SalesPoint, Territory } from "@/types";
+import type {
+  BaseLayerId,
+  HeatmapSettings,
+  LatLng,
+  MapFilters,
+  SalesPoint,
+  Territory,
+} from "@/types";
 
 function buildLabelIcon(name: string, color: string) {
   const safeName = name.replace(/[<>]/g, "");
@@ -36,6 +46,7 @@ interface Props {
   drawing?: boolean;
   showHeatmap?: boolean;
   heatPoints?: SalesPoint[];
+  heatSettings?: HeatmapSettings;
   onDraftCreated?: (coords: LatLng[]) => void;
   onTerritoryClick?: (id: string) => void;
   focusTerritoryId?: string | null;
@@ -44,26 +55,51 @@ interface Props {
   baseLayer?: BaseLayerId;
   showLabels?: boolean;
   highlightOverlaps?: boolean;
+  pointPlacing?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
+  focusPlace?: {
+    lat: number;
+    lng: number;
+    bounds?: [LatLng, LatLng];
+    label?: string;
+    tick: number;
+  } | null;
 }
 
-const BASE_LAYERS: Record<
-  BaseLayerId,
-  { url: string; attribution: string; dark: boolean }
-> = {
+function MapClickHandler({
+  enabled,
+  onClick,
+}: {
+  enabled: boolean;
+  onClick: (lat: number, lng: number) => void;
+}) {
+  useMapEvent("click", (e) => {
+    if (!enabled) return;
+    onClick(e.latlng.lat, e.latlng.lng);
+  });
+  return null;
+}
+
+// Pakistan bounding box (with a small buffer). Used to clamp panning and
+// prevent zooming out to the rest of the world.
+const PAKISTAN_BOUNDS = L.latLngBounds(
+  L.latLng(23.0, 60.5),
+  L.latLng(37.5, 78.0),
+);
+const PAKISTAN_MIN_ZOOM = 5;
+const PAKISTAN_MAX_ZOOM = 18;
+
+const BASE_LAYERS: Record<BaseLayerId, { url: string; dark: boolean }> = {
   dark: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     dark: true,
   },
   streets: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     dark: false,
   },
   satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution:
-      "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP",
     dark: false,
   },
 };
@@ -82,6 +118,36 @@ function FocusController({
     if (bounds.isValid()) map.flyToBounds(bounds, { padding: [60, 60], duration: 0.6 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [territory?.id, focusTick, map]);
+  return null;
+}
+
+function FocusPlaceController({
+  target,
+}: {
+  target?: {
+    lat: number;
+    lng: number;
+    bounds?: [LatLng, LatLng];
+    label?: string;
+    tick: number;
+  } | null;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!target) return;
+    if (target.bounds) {
+      const b = L.latLngBounds(
+        L.latLng(target.bounds[0][0], target.bounds[0][1]),
+        L.latLng(target.bounds[1][0], target.bounds[1][1]),
+      );
+      if (b.isValid()) {
+        map.flyToBounds(b, { padding: [60, 60], duration: 0.6 });
+        return;
+      }
+    }
+    map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 14), { duration: 0.6 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target?.tick, map]);
   return null;
 }
 
@@ -132,6 +198,7 @@ export function TerritoryMap({
   drawing = false,
   showHeatmap = false,
   heatPoints = [],
+  heatSettings,
   onDraftCreated,
   onTerritoryClick,
   focusTerritoryId,
@@ -140,6 +207,9 @@ export function TerritoryMap({
   baseLayer = "dark",
   showLabels = true,
   highlightOverlaps = false,
+  pointPlacing = false,
+  onMapClick,
+  focusPlace,
 }: Props) {
   const territories = useTerritoryStore((s) => s.territories);
   const draft = useTerritoryStore((s) => s.draft);
@@ -202,19 +272,36 @@ export function TerritoryMap({
       className="relative h-full w-full overflow-hidden rounded-xl"
       style={{ height }}
       data-base-layer={baseLayer}
+      data-point-placing={pointPlacing ? "true" : undefined}
     >
       <MapContainer
-        center={DEMO_CITY.center}
-        zoom={DEMO_CITY.zoom}
+        bounds={PAKISTAN_BOUNDS}
+        boundsOptions={{ padding: [16, 16] }}
+        minZoom={PAKISTAN_MIN_ZOOM}
+        maxZoom={PAKISTAN_MAX_ZOOM}
+        maxBounds={PAKISTAN_BOUNDS}
+        maxBoundsViscosity={1}
+        worldCopyJump={false}
         zoomControl
         scrollWheelZoom
+        attributionControl={false}
         style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer key={baseLayer} attribution={layer.attribution} url={layer.url} />
+        <TileLayer
+          key={baseLayer}
+          url={layer.url}
+          bounds={PAKISTAN_BOUNDS}
+          noWrap
+          minZoom={PAKISTAN_MIN_ZOOM}
+          maxZoom={PAKISTAN_MAX_ZOOM}
+        />
 
-        {showHeatmap && <HeatLayer points={heatPoints} />}
+        <PakistanMask fill={layer.dark ? "#0b0f1a" : "#1a2030"} />
 
-        {filteredTerritories.map((t) => {
+        {showHeatmap && <HeatLayer points={heatPoints} settings={heatSettings} />}
+        <MapClickHandler enabled={pointPlacing && !!onMapClick} onClick={(lat, lng) => onMapClick?.(lat, lng)} />
+
+        {heatSettings?.showTerritories === false ? null : filteredTerritories.map((t) => {
           const distributor = t.distributorId ? distributorMap[t.distributorId] : undefined;
           const isHover = hoverId === t.id;
           const isSelected = selectedId === t.id;
@@ -263,7 +350,7 @@ export function TerritoryMap({
           );
         })}
 
-        {showLabels &&
+        {showLabels && heatSettings?.showTerritories !== false &&
           filteredTerritories.map((t) => {
             if (
               filters &&
@@ -310,6 +397,57 @@ export function TerritoryMap({
         )}
 
         <FocusController territory={focusTerritory} focusTick={focusTick} />
+        <FocusPlaceController target={focusPlace} />
+
+        {focusPlace && focusPlace.bounds && (
+          <Rectangle
+            bounds={[focusPlace.bounds[0], focusPlace.bounds[1]]}
+            pathOptions={{
+              color: "#f59e0b",
+              weight: 3,
+              dashArray: "8 6",
+              fillColor: "#f59e0b",
+              fillOpacity: 0.08,
+            }}
+          >
+            {focusPlace.label && (
+              <Tooltip direction="top" sticky offset={[0, -4]}>
+                <span className="text-xs font-semibold">{focusPlace.label}</span>
+              </Tooltip>
+            )}
+          </Rectangle>
+        )}
+
+        {focusPlace && (
+          <>
+            <CircleMarker
+              center={[focusPlace.lat, focusPlace.lng]}
+              radius={14}
+              pathOptions={{
+                color: "#f59e0b",
+                weight: 2,
+                fillColor: "#f59e0b",
+                fillOpacity: 0.25,
+              }}
+            />
+            <CircleMarker
+              center={[focusPlace.lat, focusPlace.lng]}
+              radius={5}
+              pathOptions={{
+                color: "#fbbf24",
+                weight: 2,
+                fillColor: "#fbbf24",
+                fillOpacity: 1,
+              }}
+            >
+              {focusPlace.label && !focusPlace.bounds && (
+                <Tooltip direction="top" offset={[0, -6]}>
+                  <span className="text-xs font-semibold">{focusPlace.label}</span>
+                </Tooltip>
+              )}
+            </CircleMarker>
+          </>
+        )}
         <MapResizer />
       </MapContainer>
     </div>

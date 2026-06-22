@@ -171,8 +171,8 @@ export function AssignTerritoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(true) : handleCancel())}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:w-full sm:max-w-md">
+        <DialogHeader className="flex-shrink-0 border-b border-border px-5 py-4 sm:px-6">
           <DialogTitle className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-teal-400 text-white">
               <MapPin className="h-4 w-4" />
@@ -186,7 +186,11 @@ export function AssignTerritoryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form id="assign-territory-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          id="assign-territory-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6"
+        >
           <div className="space-y-2">
             <Label htmlFor="territory-name">Territory name</Label>
             <Input id="territory-name" {...register("name")} placeholder="e.g. North Zone" />
@@ -203,7 +207,7 @@ export function AssignTerritoryDialog({
               <p className="text-xs text-rose-400">{errors.coverageArea.message}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="monthly-sales">Monthly sales (PKR)</Label>
               <Input
@@ -233,7 +237,7 @@ export function AssignTerritoryDialog({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="outlets">Outlets</Label>
               <Input
@@ -303,20 +307,33 @@ export function AssignTerritoryDialog({
           </div>
         </form>
 
-        {error && (
-          <p className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
-            {error}
-          </p>
-        )}
-
-        <DialogFooter className="gap-2">
-          <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button type="submit" form="assign-territory-form" variant="gradient" disabled={submitting}>
-            {submitting ? "Saving…" : editing ? "Save changes" : "Save territory"}
-          </Button>
-        </DialogFooter>
+        <div className="flex-shrink-0 border-t border-border bg-card/80 px-5 py-3 sm:px-6">
+          {error && (
+            <p className="mb-2 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+              {error}
+            </p>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="assign-territory-form"
+              variant="gradient"
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              {submitting ? "Saving…" : editing ? "Save changes" : "Save territory"}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

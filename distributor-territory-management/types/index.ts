@@ -50,6 +50,17 @@ export interface SalesPoint {
   intensity: number; // 0-100
   amount: number;
   territoryId?: string;
+  label?: string;
+  createdAt?: string;
+}
+
+export interface HeatmapSettings {
+  radiusScale: number; // 0.4 - 2
+  opacity: number; // 0.1 - 1
+  highThreshold: number; // 0-100
+  mediumThreshold: number; // 0-100
+  showTerritories: boolean;
+  territoryFilter: string | null;
 }
 
 export interface MonthlyTrendPoint {

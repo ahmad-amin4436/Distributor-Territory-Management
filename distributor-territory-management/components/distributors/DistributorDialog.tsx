@@ -141,8 +141,8 @@ export function DistributorDialog({ open, onOpenChange, editing }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:w-full sm:max-w-xl">
+        <DialogHeader className="flex-shrink-0 border-b border-border px-5 py-4 sm:px-6">
           <DialogTitle>{editing ? "Edit distributor" : "Add new distributor"}</DialogTitle>
           <DialogDescription>
             {editing
@@ -151,7 +151,11 @@ export function DistributorDialog({ open, onOpenChange, editing }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <form id="distributor-form" onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
+        <form
+          id="distributor-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid flex-1 gap-4 overflow-y-auto px-5 py-4 sm:grid-cols-2 sm:px-6"
+        >
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="d-name">Company name</Label>
             <Input id="d-name" {...register("name")} placeholder="Eastern Edge Trading" />
@@ -221,20 +225,32 @@ export function DistributorDialog({ open, onOpenChange, editing }: Props) {
           </div>
         </form>
 
-        {error && (
-          <p className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
-            {error}
-          </p>
-        )}
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button form="distributor-form" type="submit" variant="gradient" disabled={submitting}>
-            {submitting ? "Saving…" : editing ? "Save changes" : "Create distributor"}
-          </Button>
-        </DialogFooter>
+        <div className="flex-shrink-0 border-t border-border bg-card/80 px-5 py-3 sm:px-6">
+          {error && (
+            <p className="mb-2 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+              {error}
+            </p>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              form="distributor-form"
+              type="submit"
+              variant="gradient"
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              {submitting ? "Saving…" : editing ? "Save changes" : "Create distributor"}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
